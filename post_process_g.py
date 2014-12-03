@@ -1,0 +1,42 @@
+from pytriqs.utility import mpi
+
+def clip_g(g, threshold): # TODO tail consistency
+    for i in range(len(g.data[0, :, :])):
+        for j in range(len(g.data[0, :, :])):
+            clip = True
+            for iw in range(len(g.data[:, 0, 0])):
+                if abs(g.data[iw, i, j].real) > threshold:
+                    clip = False
+            if clip:
+                for iw in range(len(g.data[:, 0, 0])):
+                    g.data[iw, i, j] = complex(0, g.data[iw, i, j].imag)
+            clip = True
+            for iw in range(len(g.data[:, 0, 0])):
+                if abs(g.data[iw, i, j].imag) > threshold:
+                    clip = False
+            if clip:
+                for iw in range(len(g.data[:, 0, 0])):
+                    g.data[iw, i, j] = complex(g.data[iw, i, j].real, 0)
+    return g
+
+def tail_start(g, interval, offset = 4):
+    iw_t = -1
+    iw_t_i = -1
+    for i in range(len(g.data[0, : , :])): # TODO i, j
+        iw_t_i_found = False
+        iw0 = 0
+        while not iw_t_i_found:
+            iw_t_i_found = True
+            for iw in range(iw0, iw0 + interval - 1):
+                if not(abs(g.data[iw + 1, i, i].imag) - abs(g.data[iw, i, i].imag) < 0) or not(abs(g.data[iw + 1, i, i].real) - abs(g.data[iw, i, i].real) < 0):
+                    iw_t_i_found = False
+            if iw_t_i_found: iw_t_i = iw0 + offset
+            iw0 += 1
+            if iw0 == len(g.data[:, 0, 0]) - interval:
+                print 'No high-freq behavior in interval found'
+                iw_t_i_found = True
+        if iw_t_i > iw_t: iw_t = iw_t_i
+    if iw_t == -1:
+        iw_t = len(g.data[:, 0, 0]) - 2
+    if mpi.is_master_node(): print 'starting block-tail-fit at iw_n:', iw_t
+    return iw_t
