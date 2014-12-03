@@ -13,7 +13,7 @@ from time import time
 
 from .archive import dict_to_archive, archive_to_dict, archive_content, load_sym_indices
 from .lattice.superlatticetools import _init_k_sum, dispersion as energy_dispersion
-from .periodization.periodization import Periodization
+from .periodization import Periodization
 from .plot import plot_from_archive, plot_of_loops_from_archive, checksym_plot, checktransf_plot
 from .post_process_g import clip_g, tail_start
 from .transformation.gf import g_sym, g_c, sym_indices
