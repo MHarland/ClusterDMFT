@@ -66,7 +66,6 @@ def _g_lat(sigma_lat, mu, eps, bz_grid): # TODO correct bandreduction
     for s in spins:
         for b in range(n_bands):
             for k_ind in range(n_kpts):
-                _temp = GfImFreq(indices = [0], mesh = sigma_lat[0][spins[0]].mesh)
-                _temp << inverse(sigma_lat[k_ind][s])
-                g[k_ind][s] << inverse(_temp - eps[0, k_ind])# TODO bands!
+                g[k_ind][s] << inverse(iOmega_n + mu - eps[0, k_ind] - sigma_lat[k_ind][s])
+                # TODO bands!
     return g
