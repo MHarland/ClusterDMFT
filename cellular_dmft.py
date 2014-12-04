@@ -152,15 +152,8 @@ class CDmft(object):
             if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('mu: %s'%mu)
 
             # inverse FT
-            if 'scheme' in self.parameters:
-                if self.parameters['scheme'] == 'PCDMFT':
-                    g_c_iw << periodized.sum_k(sigma_c_iw, mu)
-                else:
-                    self.parameters['scheme'] = 'CellularDMFT'
-                    g_c_iw << k_sum(mu = mu, Sigma = sigma_c_iw)
-            else:
-                self.parameters['scheme'] = 'CellularDMFT'
-                g_c_iw << k_sum(mu = mu, Sigma = sigma_c_iw)
+            self.parameters['scheme'] = 'CellularDMFT'
+            g_c_iw << k_sum(mu = mu, Sigma = sigma_c_iw)
             if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(g_c_iw, p['archive'][0:-3] + 'Gchecksym' + str(loop_nr) + '.png')
 
             # Use transformation to (block-)diagonalize G: G_sym = U.G.U_dag
@@ -369,24 +362,25 @@ class CDmft(object):
             lat.plot('Sigma_lat', (.25, .25), 'up', (0, 0), '-+', x_window = (0, 40))
             pp.savefig()
             plt.close()
-            lat.plot('G_lat', (0, 0), 'up', (0, 0), '-+', x_window = (0, 40))
-            lat.plot('G_lat', (.5, 0), 'up', (0, 0), '-+', x_window = (0, 40))
-            lat.plot('G_lat', (.25, .25), 'up', (0, 0), '-+', x_window = (0, 40))
-            pp.savefig()
-            plt.close()
-            lat.plot_hist2d_dos_k()
-            pp.savefig()
-            plt.close()
-            lat.plot2d_k('Tr_G_lat', 0, imaginary_part = True)
-            pp.savefig()
-            plt.close()
             lat.plot2d_k('Sigma_lat', 0, 'up', 0, imaginary_part = True)
             pp.savefig()
             plt.close()
-            path = [[0, 0], [.5, 0], [.5, .5], [0, 0]]
-            lat.plot_dos_k_w(path)
-            pp.savefig()
-            plt.close()
+            if a['Periodization'].is_group('G_lat'):
+                lat.plot('G_lat', (0, 0), 'up', (0, 0), '-+', x_window = (0, 40))
+                lat.plot('G_lat', (.5, 0), 'up', (0, 0), '-+', x_window = (0, 40))
+                lat.plot('G_lat', (.25, .25), 'up', (0, 0), '-+', x_window = (0, 40))
+                pp.savefig()
+                plt.close()
+                lat.plot_hist2d_dos_k()
+                pp.savefig()
+                plt.close()
+                lat.plot2d_k('Tr_G_lat', 0, imaginary_part = True)
+                pp.savefig()
+                plt.close()
+                path = [[0, 0], [.5, 0], [.5, .5], [0, 0]]
+                lat.plot_dos_k_w(path)
+                pp.savefig()
+                plt.close()
             lat.plot_hist2d_energy_dispersion()
             pp.savefig()
             plt.close()
