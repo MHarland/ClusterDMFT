@@ -71,7 +71,7 @@ def _g_lat_loc(sigma_lat_loc, mu, eps, bz_weights):
     g_lat_loc = sigma_lat_loc.copy()
     g_lat_loc.name = '$G_{lat,loc}$'
     g_lat_loc.zero()
-    for s, b in g0:
+    for s, b in g_lat_loc:
         for k in range(n_kpts):
             b << b + inverse(iOmega_n + mu - eps[0, k] - sigma_lat_loc[s]) * bz_weights[k]
     return g_lat_loc
