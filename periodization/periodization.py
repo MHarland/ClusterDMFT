@@ -229,19 +229,19 @@ class PeriodizationBase(object):
         """
         assert function_name in ['M_lat', 'Sigma_lat', 'G_lat', 'Tr_G_lat'], 'invalid_function_name'
         if function_name == 'M_lat': 
-            pname = '$M_{lat}$'
+            pname = '$M_{lat}(i\omega_n)$'
             function = self.m_lat
             pplot_hist2d_k(function, spin, matsubara_freq, band, self.bz_grid, self.n_kpts, **kwargs)
         if function_name == 'Sigma_lat': 
-            pname = '$\Sigma_{lat}$'
+            pname = '$\Sigma_{lat}(i\omega_n)$'
             function = self.sigma_lat
             pplot_hist2d_k(function, spin, matsubara_freq, band, self.bz_grid, self.n_kpts, **kwargs)
         if function_name == 'G_lat':
-            pname = '$G_{lat}$'
+            pname = '$G_{lat}(i\omega_n)$'
             function = self.g_lat
             pplot_hist2d_k(function, spin, matsubara_freq, band, self.bz_grid, self.n_kpts, **kwargs)
         if function_name == 'Tr_G_lat': 
-            pname = 'Tr$G_{lat}$'
+            pname = 'Tr$G_{lat}(i\omega_n)$'
             function = self.tr_g_lat
             pplot_hist2d_k_singleG(function, matsubara_freq, 0, self.bz_grid, self.n_kpts, **kwargs)
         if 'imaginary_part' in kwargs:
