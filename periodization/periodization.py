@@ -171,7 +171,7 @@ class PeriodizationBase(object):
         plt.colorbar()
         plt.xlabel('$k_x$')
         plt.ylabel('$k_y$')
-        plt.title('$\epsilon(k)$')
+        plt.title('$\epsilon_' + str(band) + '(k)$')
 
     def plot_hist2d_dos_k(self, ind_freq = 'ind_zerofreq', logarithmic = False, **kwargs):
         if ind_freq == 'ind_zerofreq':
@@ -229,19 +229,19 @@ class PeriodizationBase(object):
         """
         assert function_name in ['M_lat', 'Sigma_lat', 'G_lat', 'Tr_G_lat'], 'invalid_function_name'
         if function_name == 'M_lat': 
-            pname = '$M_{lat}(i\omega_n)$'
+            pname = '$M_{lat,' + str(band) + '}$_' + str(spin)
             function = self.m_lat
             pplot_hist2d_k(function, spin, matsubara_freq, band, self.bz_grid, self.n_kpts, **kwargs)
         if function_name == 'Sigma_lat': 
-            pname = '$\Sigma_{lat}(i\omega_n)$'
+            pname = '$\Sigma_{lat,' + str(band) + '}$_' + str(spin)
             function = self.sigma_lat
             pplot_hist2d_k(function, spin, matsubara_freq, band, self.bz_grid, self.n_kpts, **kwargs)
         if function_name == 'G_lat':
-            pname = '$G_{lat}(i\omega_n)$'
+            pname = '$G_{lat,' + str(band) + '}$_' + str(spin)
             function = self.g_lat
             pplot_hist2d_k(function, spin, matsubara_freq, band, self.bz_grid, self.n_kpts, **kwargs)
         if function_name == 'Tr_G_lat': 
-            pname = 'Tr$G_{lat}(i\omega_n)$'
+            pname = 'Tr$G_{lat}$'
             function = self.tr_g_lat
             pplot_hist2d_k_singleG(function, matsubara_freq, 0, self.bz_grid, self.n_kpts, **kwargs)
         if 'imaginary_part' in kwargs:
@@ -254,7 +254,7 @@ class PeriodizationBase(object):
 
         plt.xlabel('$k_x$')
         plt.ylabel('$k_y$')
-        plt.title(pname + '$(k, \omega)$')
+        plt.title(pname + '$(k, i\omega_' + str(matsubara_freq) + ')$')
 
     def sum_k(self, sigma, mu):
         self.set_m_lat(sigma, mu)
@@ -262,7 +262,7 @@ class PeriodizationBase(object):
         return _sum_k(self.get_g_lat(), self.bz_grid, self.bz_weights, self.lattice_vectors, self.superlattice_basis)
         
 
-def _tr_g_lat_pade(g_lat, pade_n_omega_n = 101, pade_eta = 10**(-10), dos_n_points = 1200, dos_window = (-10, 10)):
+def _tr_g_lat_pade(g_lat, pade_n_omega_n = 101, pade_eta = 10**(-2), dos_n_points = 1200, dos_window = (-10, 10)):
     tr_g_lat_pade = list()
     for gk in g_lat:
         tr_spin_g = GfImFreq(indices = range(len(gk['up'].data[0, :, :])), mesh = gk.mesh)
@@ -336,7 +336,7 @@ def pplot(f, k, block, index, bz_grid, *args, **kwargs):
     """
     f is assumed to be a list of BlockGf dependent on the k-vectors in bz_grid. k_ind is the index of the k in bz_grid of f(k) to be plotted. kwargs go to oplot.
     """
-    oplot(f[_k_ind(bz_grid, k)][block][index], name = str(k) + '_' + str(block) + '_' + str(index), *args, **kwargs)
+    oplot(f[_k_ind(bz_grid, k)][block][index], name = str(index[0]) + '_' + str(block) + '_' + str(k), *args, **kwargs)
 
 def pplot_hist2d_k(f, spin, matsubara_freq, band, bz_grid, n_kpts, imaginary_part = True, *args, **kwargs):
     """
@@ -344,6 +344,7 @@ def pplot_hist2d_k(f, spin, matsubara_freq, band, bz_grid, n_kpts, imaginary_par
     """
     assert len(bz_grid[0, :]) == 2, 'Data is not from a 2d calculation'
     if imaginary_part:
+        print [f[k][spin].data[matsubara_freq, band, band].imag for k in range(len(f))]
         plt.hist2d(bz_grid[:, 0], bz_grid[:, 1], bins = n_kpts, weights = [f[k][spin].data[matsubara_freq, band, band].imag for k in range(len(f))], *args, **kwargs)
     else:
       plt.hist2d(bz_grid[:, 0], bz_grid[:, 1], bins = n_kpts, weights = [f[k][spin].data[matsubara_freq, band, band].real for k in range(len(f))], *args, **kwargs)

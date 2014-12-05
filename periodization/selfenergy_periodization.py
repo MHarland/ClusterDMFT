@@ -44,7 +44,7 @@ def _sigma_lat(sigma, bz_grid, site_pos):
         assert len(bz_grid[:, 0]) == len(bz_grid[:, 1]), 'Fix GF datastructure!'
     if d == 3:
         assert len(bz_grid[:, 0]) == len(bz_grid[:, 1]) == len(bz_grid[:, 2]), 'Fix GF datastructure!'
-    sigma_lat = [BlockGf(name_block_generator = [(s, GfImFreq(indices = [0], mesh = sigma.mesh)) for s in spins], name = '$M_{lat}$') for i in range(n_kpts)]
+    sigma_lat = [BlockGf(name_block_generator = [(s, GfImFreq(indices = [0], mesh = sigma.mesh)) for s in spins], name = '$\Sigma_{lat}$') for i in range(n_kpts)]
     for s in spins:
         for k_ind in range(n_kpts):
             k = bz_grid[k_ind]
@@ -53,11 +53,11 @@ def _sigma_lat(sigma, bz_grid, site_pos):
                 for j in range(n_sites):
                     r_j = array(site_pos[j])
                     _temp = sigma_lat[k_ind][s].copy()
-                    sigma_lat[k_ind][s][0, 0] << _temp[0, 0] + sigma[s][i, j] * exp(complex(0, 2 * pi * dot(k, (r_i - r_j)))) /float(n_sites)
+                    sigma_lat[k_ind][s][0, 0] << _temp[0, 0] + sigma[s][i, j] * exp(complex(0, 2 * pi * dot(k, (r_i - r_j)))) /float(n_sites) # TODO only for full trans inv
     del _temp
     return sigma_lat
 
-def _g_lat(sigma_lat, mu, eps, bz_grid): # TODO correct bandreduction
+def _g_lat(sigma_lat, mu, eps, bz_grid): # TODO only for full trans inv
     spins = ['up', 'down']
     n_kpts = len(bz_grid)
     n_bands = len(eps)
@@ -67,5 +67,4 @@ def _g_lat(sigma_lat, mu, eps, bz_grid): # TODO correct bandreduction
         for b in range(n_bands):
             for k_ind in range(n_kpts):
                 g[k_ind][s] << inverse(iOmega_n + mu - eps[0, k_ind] - sigma_lat[k_ind][s])
-                # TODO bands!
     return g
