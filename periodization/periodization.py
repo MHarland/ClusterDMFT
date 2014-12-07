@@ -46,9 +46,11 @@ class PeriodizationBase(object):
             self.d = d
             #self.bz_grid = array([(k - array([shift] * d)) for k in sumk.BZ_Points]) # only valid for 2x2cluster in squarelattice!
             self.bz_grid = array([(k - shift) for k in sumk.BZ_Points])
-            #self.bz_grid = array([k for k in sumk.BZ_Points])
+            self.bz_grid = array([k for k in sumk.BZ_Points]) # remove shift
             self.bz_weights = sumk.BZ_weights
             self.reciprocal_lattice_vectors = reciprocal_latticevectors(lattice_vectors)
+
+            self.sumk = sumk
 
     def get_sigma_lat(self):
         return self.sigma_lat
@@ -179,8 +181,8 @@ class PeriodizationBase(object):
         if logarithmic:
             plt.hist2d(self.bz_grid[:, 0], self.bz_grid[:, 1], bins = self.n_kpts, weights = [log(-1 * self.tr_g_lat_pade[k].data[ind_freq, 0, 0].imag / pi) for k in range(len(self.tr_g_lat_pade))], **kwargs)
         else:
-            #plt.hist2d(self.bz_grid[:, 0], self.bz_grid[:, 1], bins = self.n_kpts, weights = [(-1 * self.tr_g_lat_pade[k].data[ind_freq, 0, 0].imag / pi) for k in range(len(self.tr_g_lat_pade))], cmin = 0, vmin = 0, vmax = 1, **kwargs)
-            plt.hist2d(self.bz_grid[:, 0], self.bz_grid[:, 1], bins = self.n_kpts, weights = [(-1 * self.tr_g_lat_pade[k].data[ind_freq, 0, 0].imag / pi) for k in range(len(self.tr_g_lat_pade))], **kwargs)
+            plt.hist2d(self.bz_grid[:, 0], self.bz_grid[:, 1], bins = self.n_kpts, weights = [(-1 * self.tr_g_lat_pade[k].data[ind_freq, 0, 0].imag / pi) for k in range(len(self.tr_g_lat_pade))], cmin = 0, vmin = 0, vmax = 1, **kwargs)
+            #plt.hist2d(self.bz_grid[:, 0], self.bz_grid[:, 1], bins = self.n_kpts, weights = [(-1 * self.tr_g_lat_pade[k].data[ind_freq, 0, 0].imag / pi) for k in range(len(self.tr_g_lat_pade))], **kwargs)
         plt.colorbar()
         plt.xlabel('$k_x$')
         plt.ylabel('$k_y$')
@@ -344,7 +346,6 @@ def pplot_hist2d_k(f, spin, matsubara_freq, band, bz_grid, n_kpts, imaginary_par
     """
     assert len(bz_grid[0, :]) == 2, 'Data is not from a 2d calculation'
     if imaginary_part:
-        print [f[k][spin].data[matsubara_freq, band, band].imag for k in range(len(f))]
         plt.hist2d(bz_grid[:, 0], bz_grid[:, 1], bins = n_kpts, weights = [f[k][spin].data[matsubara_freq, band, band].imag for k in range(len(f))], *args, **kwargs)
     else:
       plt.hist2d(bz_grid[:, 0], bz_grid[:, 1], bins = n_kpts, weights = [f[k][spin].data[matsubara_freq, band, band].real for k in range(len(f))], *args, **kwargs)

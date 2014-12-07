@@ -1,7 +1,5 @@
 from pytriqs.gf.local import BlockGf, GfImFreq, iOmega_n, inverse
 from numpy import array, exp, dot, pi
-#from pytriqs.plot.mpl_interface import oplot
-#from matplotlib import pyplot as plt
 
 from ..lattice.superlatticetools import dispersion as energy_dispersion
 from .periodization import PeriodizationBase
@@ -52,9 +50,7 @@ def _sigma_lat(sigma, bz_grid, site_pos):
                 r_i = array(site_pos[i])
                 for j in range(n_sites):
                     r_j = array(site_pos[j])
-                    _temp = sigma_lat[k_ind][s].copy()
-                    sigma_lat[k_ind][s][0, 0] << _temp[0, 0] + sigma[s][i, j] * exp(complex(0, 2 * pi * dot(k, (r_i - r_j)))) /float(n_sites) # TODO only for full trans inv
-    del _temp
+                    sigma_lat[k_ind][s][0, 0] += sigma[s][i, j] * exp(complex(0, 2 * pi * dot(k, (r_i - r_j)))) /float(n_sites) # TODO only for full trans inv
     return sigma_lat
 
 def _g_lat(sigma_lat, mu, eps, bz_grid): # TODO only for full trans inv
