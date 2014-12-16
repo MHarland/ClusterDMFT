@@ -1,5 +1,5 @@
 #!/usr/bin/env pytriqs
-from cdmft.cellular_dmft import CDmft
+from cdmft.cdmft import CDmft
 import sys
 
 for arg in sys.argv[1:len(sys.argv)]:

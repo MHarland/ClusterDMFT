@@ -32,11 +32,7 @@ class Periodization(PeriodizationBase):
         self.sigma_lat = _sigma_lat(m, self.bz_grid, mu)
 
     def set_g_lat(self, m):
-        self.g_lat = _g_lat(m, energy_dispersion(self.lattice_vectors, 
-                                                 self.lattice_basis, 
-                                                 self.hopping, 
-                                                 self.n_kpts), 
-                            self.bz_grid)
+        self.g_lat = _g_lat(m, self.eps, self.bz_grid)
 
     def set_all(self, sigma, mu = 0):
         self.set_m_lat(sigma, mu)
@@ -105,12 +101,12 @@ def _sigma_lat(m, bz_grid, mu):
 def _g_lat(m, eps, bz_grid): # TODO correct bandreduction
     spins = ['up', 'down']
     n_kpts = len(bz_grid)
-    n_bands = len(eps)
+    n_bands = len(eps[0, :, :])
     g = [BlockGf(name_block_generator = [(s, GfImFreq(indices = range(n_bands), mesh = m[0][spins[0]].mesh)) for s in spins], name = '$G_{lat}$') for i in range(n_kpts)]
     for s in spins:
         for b in range(n_bands):
             for k_ind in range(n_kpts):
                 _temp = GfImFreq(indices = [0], mesh = m[0][spins[0]].mesh)
                 _temp << inverse(m[k_ind][s])
-                g[k_ind][s] << inverse(_temp - eps[0, k_ind])# TODO bands!
+                g[k_ind][s] << inverse(_temp - eps[k_ind, 0, 0])# TODO bands!
     return g

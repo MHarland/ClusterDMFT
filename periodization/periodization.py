@@ -49,8 +49,8 @@ class PeriodizationBase(object):
             self.bz_grid = array([k for k in sumk.BZ_Points]) # remove shift
             self.bz_weights = sumk.BZ_weights
             self.reciprocal_lattice_vectors = reciprocal_latticevectors(lattice_vectors)
-
-            self.sumk = sumk
+            self.eps = sumk.Hopping
+            #self.sumk = sumk
 
     def get_sigma_lat(self):
         return self.sigma_lat
@@ -181,8 +181,8 @@ class PeriodizationBase(object):
         if logarithmic:
             plt.hist2d(self.bz_grid[:, 0], self.bz_grid[:, 1], bins = self.n_kpts, weights = [log(-1 * self.tr_g_lat_pade[k].data[ind_freq, 0, 0].imag / pi) for k in range(len(self.tr_g_lat_pade))], **kwargs)
         else:
-            plt.hist2d(self.bz_grid[:, 0], self.bz_grid[:, 1], bins = self.n_kpts, weights = [(-1 * self.tr_g_lat_pade[k].data[ind_freq, 0, 0].imag / pi) for k in range(len(self.tr_g_lat_pade))], cmin = 0, vmin = 0, vmax = 1, **kwargs)
-            #plt.hist2d(self.bz_grid[:, 0], self.bz_grid[:, 1], bins = self.n_kpts, weights = [(-1 * self.tr_g_lat_pade[k].data[ind_freq, 0, 0].imag / pi) for k in range(len(self.tr_g_lat_pade))], **kwargs)
+            #plt.hist2d(self.bz_grid[:, 0], self.bz_grid[:, 1], bins = self.n_kpts, weights = [(+1 * self.tr_g_lat_pade[k].data[ind_freq, 0, 0].imag / pi) for k in range(len(self.tr_g_lat_pade))], cmin = -0.1, vmin = 0, vmax = 1, **kwargs)
+            plt.hist2d(self.bz_grid[:, 0], self.bz_grid[:, 1], bins = self.n_kpts, weights = [(-1 * self.tr_g_lat_pade[k].data[ind_freq, 0, 0].imag / pi) for k in range(len(self.tr_g_lat_pade))], **kwargs)
         plt.colorbar()
         plt.xlabel('$k_x$')
         plt.ylabel('$k_y$')
@@ -212,7 +212,7 @@ class PeriodizationBase(object):
         ax.set_yticks([k_ticks[i][0] for i in range(len(k_ticks))])
         ax.set_yticklabels([k_ticks[i][1] for i in range(len(k_ticks))])
         ax.set_zlabel('$A(k, \omega)$')
-        ax.set_zlim([0, 4])
+        #ax.set_zlim([0, 4])
         ax.view_init(elev = 60, azim = -90)
 
     def plot(self, function_name, k, block, index, *args, **kwargs):
@@ -257,12 +257,6 @@ class PeriodizationBase(object):
         plt.xlabel('$k_x$')
         plt.ylabel('$k_y$')
         plt.title(pname + '$(k, i\omega_' + str(matsubara_freq) + ')$')
-
-    def sum_k(self, sigma, mu):
-        self.set_m_lat(sigma, mu)
-        self.set_g_lat(self.get_m_lat())
-        return _sum_k(self.get_g_lat(), self.bz_grid, self.bz_weights, self.lattice_vectors, self.superlattice_basis)
-        
 
 def _tr_g_lat_pade(g_lat, pade_n_omega_n = 101, pade_eta = 10**(-2), dos_n_points = 1200, dos_window = (-10, 10)):
     tr_g_lat_pade = list()
@@ -361,21 +355,3 @@ def pplot_hist2d_k_singleG(f, matsubara_freq, band, bz_grid, n_kpts, imaginary_p
     else:
       plt.hist2d(bz_grid[:, 0], bz_grid[:, 1], bins = n_kpts, weights = [f[k].data[matsubara_freq, band, band].real for k in range(len(f))], *args, **kwargs)
     plt.colorbar()
-
-def _sum_k(g_lat, bz_points, bz_weights, lattice_vectors, superlattice_basis):
-    # TODO not for kagome...
-    sites = range(len(superlattice_basis))
-    g_cluster = BlockGf(name_block_generator = [(s, GfImFreq(indices = sites, mesh = g_lat[0].mesh)) for s in ['up', 'down']])
-    for w, k, gl in [(bz_weights[kk], bz_points[kk], g_lat[kk]) for kk in range(len(bz_points))]:
-        for i in sites:
-            r_i = array(superlattice_basis[i])
-            #for ii in range(len(r_i)):
-                #r_i[ii] = r_i[ii] /float(lattice_vectors[][ii])
-            for j in sites:
-                r_j = array(superlattice_basis[j])
-                #for jj in range(len(r_j)):
-                    #r_j[jj] = r_j[jj] /float(lattice_vectors[jj])
-                for s, b in g_cluster:
-                    b[i, j] << b[i, j] + gl[s] * exp(complex(0, -2 * pi * dot(k, (r_i - r_j)))) * w
-
-    return g_cluster

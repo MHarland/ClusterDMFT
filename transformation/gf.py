@@ -70,8 +70,8 @@ def sym_indices(g_weiss_iw, u):
     for s, b in g_weiss_iw:
         for i in sites:
             for l in sites:
-                for m in range(40): # len(b.data[:,0,0])
-                    if abs(sum_list([sum_list([u[i, j] * b[j, k] * udag[k, l] for j in sites]) for k in sites]).data[m, 0, 0]) > almost_zero:
+                for m in range(len(b.data[:,0,0])):
+                    if abs(sum_list([sum_list([u[i, j] * b.data[m, j, k] * udag[k, l] for j in sites]) for k in sites])) > almost_zero:
                         g_block_structure[i, l] = 1
 
     for i in sites:

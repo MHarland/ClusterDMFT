@@ -1,23 +1,24 @@
 from pytriqs.utility import mpi
 
-def clip_g(g, threshold): # TODO tail consistency
-    for i in range(len(g.data[0, :, :])):
-        for j in range(len(g.data[0, :, :])):
-            clip = True
-            for iw in range(len(g.data[:, 0, 0])):
-                if abs(g.data[iw, i, j].real) > threshold:
-                    clip = False
-            if clip:
+def clip_g(bg, threshold): # TODO tail consistency(?)
+    for s, g in bg:
+        for i in range(len(g.data[0, :, :])):
+            for j in range(len(g.data[0, :, :])):
+                clip = True
                 for iw in range(len(g.data[:, 0, 0])):
-                    g.data[iw, i, j] = complex(0, g.data[iw, i, j].imag)
-            clip = True
-            for iw in range(len(g.data[:, 0, 0])):
-                if abs(g.data[iw, i, j].imag) > threshold:
-                    clip = False
-            if clip:
+                    if abs(g.data[iw, i, j].real) > threshold:
+                        clip = False
+                if clip:
+                    for iw in range(len(g.data[:, 0, 0])):
+                        g.data[iw, i, j] = complex(0, g.data[iw, i, j].imag)
+                clip = True
                 for iw in range(len(g.data[:, 0, 0])):
-                    g.data[iw, i, j] = complex(g.data[iw, i, j].real, 0)
-    return g
+                    if abs(g.data[iw, i, j].imag) > threshold:
+                        clip = False
+                if clip:
+                    for iw in range(len(g.data[:, 0, 0])):
+                        g.data[iw, i, j] = complex(g.data[iw, i, j].real, 0)
+    return bg
 
 def tail_start(g, interval, offset = 4):
     iw_t = -1
@@ -40,3 +41,34 @@ def tail_start(g, interval, offset = 4):
         iw_t = len(g.data[:, 0, 0]) - 2
     if mpi.is_master_node(): print 'starting block-tail-fit at iw_n:', iw_t
     return iw_t
+
+def impose_site_symmetries(g, site_symmetries):
+    """
+    example for dimer in a chain:
+    site_symmetries = [[(0, 0), (1, 1)], [(1, 0), (0, 1)]]
+    """
+    g_s = g.copy()
+    g_s.zero()
+    for sclass in site_symmetries:
+        n = len(sclass)
+        for selement1 in sclass:
+            for selement2 in sclass:
+                for spin, block in g:
+                    g_s[spin][selement1] += g[spin][selement2] /float(n)
+    return g_s
+
+def impose_paramagnetism(g):
+    g_s = g.copy()
+    g_s.zero()
+    for s1, b1 in g:
+        for s2, b2 in g:
+            g_s[s1] += g[s2] * .5
+    return g_s
+
+class MixUpdate(object):
+    def __init__(self, g):
+        self.g_old = g.copy()
+    def __call__(self, g, x):
+        g << x * g + (1 - x) * self.g_old
+        self.g_old = g.copy()
+        return g
