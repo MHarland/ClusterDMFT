@@ -1,9 +1,9 @@
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, cm
 from matplotlib.backends.backend_pdf import PdfPages
 from numpy import ndarray, identity
 import os
 from pytriqs.utility.dichotomy import dichotomy, mpi
-from pytriqs.gf.local import BlockGf, inverse, GfReFreq, GfImFreq, GfImTime, LegendreToMatsubara
+from pytriqs.gf.local import BlockGf, inverse, GfReFreq, GfImFreq, GfImTime, LegendreToMatsubara, TailGf
 from pytriqs.version import version
 from pytriqs.archive import HDFArchive
 from pytriqs.plot.mpl_interface import oplot
@@ -197,19 +197,24 @@ class CDmft(object):
             if p['measure_g_l']:
                 for name, g_l in imp_sol.G_l:
                     g_sym_iw[name] << LegendreToMatsubara(g_l)
-                    g_sym_iw_unfitted = g_sym_iw.copy()
+                g_sym_iw_unfitted = g_sym_iw.copy()
+                sigma_sym_iw_unfitted = g_sym_iw.copy()
+                sigma_sym_iw_unfitted << inverse(imp_sol.G0_iw) - inverse(g_sym_iw)
             else:
-                g_sym_iw << imp_sol.G_iw
-                sigma_sym_iw << imp_sol.Sigma_iw
-                """
+                for name, g_tau in imp_sol.G_tau:
+                    g_sym_iw[name].set_from_fourier(g_tau)
+                g_sym_iw_unfitted = g_sym_iw.copy()
+                sigma_sym_iw_unfitted = g_sym_iw.copy()
+                sigma_sym_iw_unfitted << inverse(imp_sol.G0_iw) - inverse(g_sym_iw)
                 if 'fit_tail' in p:
                     if p['fit_tail']:
-                        for ind in sym_ind:
-                            if ind[0] == name: block_inds = ind[1]
-                        fixed_moments = TailGf(len(block_inds), len(block_inds), 1, 1)
-                        fixed_moments[1] = identity(len(block_inds))
-                        g_sym_iw[name].fit_tail(fixed_moments, 8, tail_start(g_sym_iw[name], 10), p['n_iw'] - 1)
-                """
+                        for name, g in g_sym_iw:
+                            for ind in sym_ind:
+                                if ind[0] == name: block_inds = ind[1]
+                            fixed_moments = TailGf(len(block_inds), len(block_inds), 1, 1)
+                            fixed_moments[1] = identity(len(block_inds))
+                            g_sym_iw[name].fit_tail(fixed_moments, 8, p['tail_start'], p['n_iw'] - 1)
+
             g_sym_iw << clip_g(g_sym_iw, p['clipping_threshold'])
             g_c_iw << g_c(g_sym_iw, p['symmetry_transformation'], sym_ind)
             g_c_iw << clip_g(g_c_iw, p['clipping_threshold'])
@@ -225,6 +230,8 @@ class CDmft(object):
             # Backtransformation to site-basis
             g_c_iw << g_c(g_sym_iw, p['symmetry_transformation'], sym_ind)
             sigma_c_iw << g_c(sigma_sym_iw, p['symmetry_transformation'], sym_ind)
+            sigma_c_iw_unfitted = sigma_c_iw.copy()
+            sigma_c_iw_unfitted << g_c(sigma_sym_iw_unfitted, p['symmetry_transformation'], sym_ind)
 
             density = g_c_iw.total_density()
             if mpi.is_master_node():
@@ -246,6 +253,7 @@ class CDmft(object):
                 a_l['G_sym_iw'] = g_sym_iw
                 a_l['G_sym_iw_unfitted'] = g_sym_iw_unfitted
                 a_l['Sigma_c_iw'] = sigma_c_iw
+                a_l['Sigma_c_iw_unfitted'] = sigma_c_iw_unfitted
                 a_l['mu'] = mu
                 a_l['density'] = density
                 a_l['sign'] = imp_sol.average_sign
@@ -291,7 +299,7 @@ class CDmft(object):
                 pp.savefig()
                 plt.close()
 
-        markers = ['o', '+', 'x', '^', '>', 'v', '<']
+        markers = ['o', '+', 'x', '^', '>', 'v', '<', '.', 'd', 'h']
         for i in sites:
             m = markers[i % len(markers)]
             plot_from_archive(p['archive'], 'G_c_iw', [-1], indices = [(i, i)], x_window = prange, marker = m)
@@ -319,11 +327,36 @@ class CDmft(object):
         pp.savefig()
         plt.close()
 
+        inds = load_sym_indices(p['archive'], -1)
+
+        n_graphs = 0
+        for spin, orb_list in inds.items():
+            n_graphs += len(orb_list)
         for m in ['R', 'I']:
-            plot_from_archive(p['archive'], 'G_sym_iw_unfitted', spins = load_sym_indices(p['archive'], -1), RI = m, x_window = prange, marker = '+')
-            plot_from_archive(p['archive'], 'G_sym_iw', spins = load_sym_indices(p['archive'], -1), RI = m, x_window = prange, marker = '+')
+            c = 0
+            for ind in inds:
+                for orb in inds[ind]:
+                    plot_from_archive(p['archive'], 'G_sym_iw_unfitted', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(n_graphs)))
+                    plot_from_archive(p['archive'], 'G_sym_iw', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = '+', color = cm.jet(c/float(n_graphs)))
+                    c += 1
             pp.savefig()
             plt.close()
+
+        a = HDFArchive(self.parameters['archive'], 'r')
+        in_archive = False
+        if 'Sigma_c_iw_unfitted' in a['Results'][str(self.last_loop())]:
+            in_archive = True
+        del a
+        if in_archive:
+            for m in ['R', 'I']:
+                c = 0
+                for i in range(n_sites):
+                    for j in range(n_sites):
+                        plot_from_archive(p['archive'], 'Sigma_c_iw_unfitted', indices = [(i, j)], spins = ['up'], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(n_sites**2)))
+                        plot_from_archive(p['archive'], 'Sigma_c_iw_unfitted', indices = [(i, j)], spins = ['down'], RI = m, x_window = prange, marker = '+', color = cm.jet(c/float(n_sites**2)))
+                        c += 1
+                pp.savefig()
+                plt.close()
 
         for m in ['R', 'I']:
             plot_from_archive(p['archive'], 'G_c_iw', range(-min(self.next_loop(), 5), 0), RI = m, x_window = prange, marker = '+')

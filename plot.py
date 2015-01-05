@@ -48,8 +48,8 @@ def plot_of_loops_from_archive(archive, function, matsubara_freqs = [0], spins =
     del arch
 
 def plot_from_archive(archive, function, loops = [-1], indices = [(0, 0)], spins = ['up'], **kwargs):
-    functions = ['Delta_sym_tau', 'G_c_iw', 'G_c_tau', 'Sigma_c_iw', 'G_sym_l', 'G_sym_iw', 'G_sym_iw_unfitted']
-    assert function in functions, 'first argument has to be in' + functions
+    functions = ['Delta_sym_tau', 'G_c_iw', 'G_c_tau', 'Sigma_c_iw', 'G_sym_l', 'G_sym_iw', 'G_sym_iw_unfitted', 'Sigma_c_iw_unfitted', 'Sigma_sym_iw_unfitted']
+    assert function in functions, 'first argument has to be in' + str(functions)
     archive = HDFArchive(archive, 'r')
 
     for l in loops:

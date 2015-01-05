@@ -1,24 +1,31 @@
 from pytriqs.utility import mpi
+from pytriqs.gf.local import BlockGf
 
 def clip_g(bg, threshold): # TODO tail consistency(?)
+    if not type(bg) == BlockGf: return clip_block(bg, threshold)
     for s, g in bg:
-        for i in range(len(g.data[0, :, :])):
-            for j in range(len(g.data[0, :, :])):
-                clip = True
-                for iw in range(len(g.data[:, 0, 0])):
-                    if abs(g.data[iw, i, j].real) > threshold:
-                        clip = False
-                if clip:
-                    for iw in range(len(g.data[:, 0, 0])):
-                        g.data[iw, i, j] = complex(0, g.data[iw, i, j].imag)
-                clip = True
-                for iw in range(len(g.data[:, 0, 0])):
-                    if abs(g.data[iw, i, j].imag) > threshold:
-                        clip = False
-                if clip:
-                    for iw in range(len(g.data[:, 0, 0])):
-                        g.data[iw, i, j] = complex(g.data[iw, i, j].real, 0)
+        bg[s] = clip_block(g, threshold)
     return bg
+
+def clip_block(g, threshold):
+    for i in range(len(g.data[0, :, :])):
+        for j in range(len(g.data[0, :, :])):
+            clip = True
+            for iw in range(len(g.data[:, 0, 0])):
+                if abs(g.data[iw, i, j].real) > threshold:
+                    clip = False
+            if clip:
+                for iw in range(len(g.data[:, 0, 0])):
+                    g.data[iw, i, j] = complex(0, g.data[iw, i, j].imag)
+            clip = True
+            for iw in range(len(g.data[:, 0, 0])):
+                if abs(g.data[iw, i, j].imag) > threshold:
+                    clip = False
+            if clip:
+                for iw in range(len(g.data[:, 0, 0])):
+                    g.data[iw, i, j] = complex(g.data[iw, i, j].real, 0)
+    return g
+    
 
 def tail_start(g, interval, offset = 4):
     iw_t = -1

@@ -1,7 +1,6 @@
 from pytriqs.gf.local import BlockGf, GfImFreq, iOmega_n, inverse
-from numpy import array, exp, dot, pi
+from numpy import array, exp, dot, pi, identity
 
-from ..lattice.superlatticetools import dispersion as energy_dispersion
 from .periodization import PeriodizationBase
 
 # TODO make plots nice, what if cluster of lattice that is not fully trans inv?
@@ -43,6 +42,7 @@ def _sigma_lat(sigma, bz_grid, site_pos, ws_weights):
         assert len(bz_grid[:, 0]) == len(bz_grid[:, 1]), 'Fix GF datastructure!'
     if d == 3:
         assert len(bz_grid[:, 0]) == len(bz_grid[:, 1]) == len(bz_grid[:, 2]), 'Fix GF datastructure!'
+
     sigma_lat = [BlockGf(name_block_generator = [(s, GfImFreq(indices = [0], mesh = sigma.mesh)) for s in spins], name = '$\Sigma_{lat}$') for i in range(n_kpts)]
     for s in spins:
         for k_ind in range(n_kpts):
@@ -54,14 +54,13 @@ def _sigma_lat(sigma, bz_grid, site_pos, ws_weights):
                     sigma_lat[k_ind][s][0, 0] += ws_weights[i, j] * sigma[s][i, j] * exp(complex(0, 2 * pi * dot(k, (r_i - r_j)))) # TODO only for full trans inv
     return sigma_lat
 
-def _g_lat(sigma_lat, mu, eps, bz_grid): # TODO only for full trans inv
+def _g_lat(sigma_lat, mu, eps, bz_grid):
     spins = ['up', 'down']
     n_kpts = len(bz_grid)
     n_bands = len(eps[0, :, :])
     assert n_bands == 1, 'not implemented yet'
     g = [BlockGf(name_block_generator = [(s, GfImFreq(indices = range(n_bands), mesh = sigma_lat[0][spins[0]].mesh)) for s in spins], name = '$G_{lat}$') for i in range(n_kpts)]
     for s in spins:
-        for b in range(n_bands):
-            for k_ind in range(n_kpts):
-                g[k_ind][s] << inverse(iOmega_n + mu - eps[k_ind, 0, 0] - sigma_lat[k_ind][s])
+        for k_ind in range(n_kpts):
+            g[k_ind][s] << inverse(iOmega_n + mu * identity(n_bands) - eps[k_ind, :, :] - sigma_lat[k_ind][s])
     return g

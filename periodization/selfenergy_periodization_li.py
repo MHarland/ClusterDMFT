@@ -1,7 +1,6 @@
 from pytriqs.gf.local import BlockGf, GfImFreq, iOmega_n, inverse
 from numpy import array, exp, dot, pi, identity
 
-from ..lattice.superlatticetools import dispersion as energy_dispersion
 from .periodization import PeriodizationBase
 
 # TODO make plots nice, what if cluster of lattice that is not fully trans inv?
@@ -28,14 +27,12 @@ class Periodization(PeriodizationBase):
         self.set_tr_g_lat_pade(self.g_lat)
 
 def _sigma_lat(sigma, rbz_grid, ssp):
+    spins = ['up', 'down']
     n_k = len(rbz_grid)
-    zero = sigma.copy()
-    zero.name = '$\Sigma_{lat}$'
-    zero.zero()
-    sigma_sl = [zero.copy() for k in range(n_k)]
+    n_sites = len(ssp.values()[0])
+    sigma_sl = [BlockGf(name_block_generator = [(s, GfImFreq(indices = range(n_sites), mesh = sigma[spins[0]].mesh)) for s in spins], name = '$\Sigma_{lat}$') for i in range(n_k)]
     for k in range(n_k):
         for s, b in sigma_sl[k]:
-            n_sites = len(b.data[0, :, :])
             for r in ssp.keys():
                 sigma_r = array(ssp[r])
                 for a in range(n_sites):
@@ -44,7 +41,7 @@ def _sigma_lat(sigma, rbz_grid, ssp):
                             sigma_sl[k][s][a, b] += exp(complex(0, 2 * pi * dot(rbz_grid[k], array(r)))) * sigma[s][sigma_r[a, b][0], sigma_r[a, b][1]]
     return sigma_sl
 
-def _g_lat(sigma_lat, mu, eps, bz_grid): # TODO only for full trans inv
+def _g_lat(sigma_lat, mu, eps, bz_grid):
     spins = ['up', 'down']
     n_kpts = len(bz_grid)
     n_bands = len(eps[0, :, :])

@@ -168,7 +168,7 @@ class PeriodizationBase(object):
         #k1 = self.reciprocal_lattice_vectors[0, :]
         #k2 = self.reciprocal_lattice_vectors[1, :]
         #nbins = int(self.n_kpts * (abs(dot(k1, k2)) + norm(k1)) / norm(k1))
-        eps = energy_dispersion(self.lattice_vectors, self.lattice_basis, self.hopping, self.n_kpts)[band, :]
+        eps = [self.eps[k, band, band].real for k in range(len(self.eps))]
         plt.hist2d(self.bz_grid[:, 0], self.bz_grid[:, 1], bins = self.n_kpts, weights = eps, **kwargs)
         plt.colorbar()
         plt.xlabel('$k_x$')
@@ -332,7 +332,11 @@ def pplot(f, k, block, index, bz_grid, *args, **kwargs):
     """
     f is assumed to be a list of BlockGf dependent on the k-vectors in bz_grid. k_ind is the index of the k in bz_grid of f(k) to be plotted. kwargs go to oplot.
     """
-    oplot(f[_k_ind(bz_grid, k)][block][index], name = str(index[0]) + '_' + str(block) + '_' + str(k), *args, **kwargs)
+    if 'name' in kwargs.keys():
+        name = kwargs.pop('name')
+    else:
+        name = str(index[0]) + '_' + str(block) + '_' + str(k)
+    oplot(f[_k_ind(bz_grid, k)][block][index], name = name, *args, **kwargs)
 
 def pplot_hist2d_k(f, spin, matsubara_freq, band, bz_grid, n_kpts, imaginary_part = True, *args, **kwargs):
     """
