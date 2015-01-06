@@ -17,6 +17,7 @@ from .lattice.superlatticetools import dispersion as energy_dispersion
 from .periodization import Periodization
 from .plot import plot_from_archive, plot_of_loops_from_archive, checksym_plot, checktransf_plot
 from .post_process_g import clip_g, tail_start, impose_site_symmetries, impose_paramagnetism, MixUpdate
+from .spectrum import get_spectrum
 from .transformation.gf import g_sym, g_c, sym_indices
 from .transformation.operators import h_loc_sym
 from .transformation.u_matrix import CoulombTensor
@@ -61,9 +62,9 @@ class CDmft(object):
                 for key in a_p:
                     if key not in p.keys():
                         if key == 'hop':
-                            p[key] = archive_to_dict(p['archive'], ['parameters', str(key)])
+                            p[str(key)] = archive_to_dict(p['archive'], ['parameters', str(key)])
                         else:
-                            p[key] = a_p[key]
+                            p[str(key)] = a_p[key]
             else:
                 archive = HDFArchive(p['archive'], 'w')
                 archive.create_group('parameters')
@@ -83,7 +84,7 @@ class CDmft(object):
             if key == 'hop':
                 dict_to_archive(val, p['archive'], ['parameters', str(key)])
             else:
-                a_p[key] = val
+                a_p[str(key)] = val
         del archive
 
     def print_parameters(self):
@@ -183,7 +184,7 @@ class CDmft(object):
             # Solve imuprity problem
             rnames = random_generator_names_list()
             rname = rnames[int((loop_nr + mpi.rank) % len(rnames))]
-            seed = int(time()*10**6) - int(time()) * 10**6 + 862379 * mpi.rank
+            seed = 862379 * mpi.rank# + int(time()*10**6) - int(time()) * 10**6
             solver_parameters = ['n_cycles', 'length_cycle', 'n_warmup_cycles', 'random_seed', 'random_name', 'max_time', 'verbosity', 'use_trace_estimator', 'measure_g_tau', 'measure_g_l', 'measure_pert_order', 'make_histograms']
             pp = {'random_seed' : seed, 'random_name' : rname}
             for i in solver_parameters:
@@ -257,6 +258,7 @@ class CDmft(object):
                 a_l['mu'] = mu
                 a_l['density'] = density
                 a_l['sign'] = imp_sol.average_sign
+                a_l['spectrum'] = get_spectrum(imp_sol)
                 a_l.create_group('sym_indices')
                 a_l['sym_indices'].update(dict(sym_ind))
                 duration = time() - duration
