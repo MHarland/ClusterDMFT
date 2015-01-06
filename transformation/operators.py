@@ -47,7 +47,7 @@ def h_loc_sym(u_int, hop_loc, u, sym_indices, verbosity = 0):
                 for j in sites:
                     for k in sites:
                         for l in sites:
-                            h_loc += u_c_sym[i, j, k, l, s1, s2] * (_unblocked_c_dag_sym(s1, i, sym_indices) * _unblocked_c_dag_sym(s2, j, sym_indices) *  _unblocked_c_sym(s2, l, sym_indices) * _unblocked_c_sym(s1, k, sym_indices) - .5 * _unblocked_c_dag_sym(s1, i, sym_indices) * _unblocked_c_sym(s1, k, sym_indices) - .5 * _unblocked_c_dag_sym(s2, j, sym_indices) * _unblocked_c_sym(s2, l, sym_indices) + .25)
+                            h_loc += u_c_sym[i, j, k, l, s1, s2] * _unblocked_c_dag_sym(s1, i, sym_indices) * _unblocked_c_dag_sym(s2, j, sym_indices) *  _unblocked_c_sym(s2, l, sym_indices) * _unblocked_c_sym(s1, k, sym_indices)
     if verbosity > 0 and mpi.is_master_node():
         mpi.report('H_loc:', h_loc)
     return h_loc
