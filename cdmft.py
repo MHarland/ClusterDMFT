@@ -1,6 +1,6 @@
 from matplotlib import pyplot as plt, cm
 from matplotlib.backends.backend_pdf import PdfPages
-from numpy import ndarray, identity
+from numpy import ndarray, identity, array, zeros
 import os
 from pytriqs.utility.dichotomy import dichotomy, mpi
 from pytriqs.gf.local import BlockGf, inverse, GfReFreq, GfImFreq, GfImTime, LegendreToMatsubara, TailGf
@@ -20,6 +20,7 @@ from .post_process_g import clip_g, tail_start, impose_site_symmetries, impose_p
 from .spectrum import get_spectrum
 from .transformation.gf import g_sym, g_c, sym_indices
 from .transformation.operators import h_loc_sym
+from .transformation.other import hop_loc_sym
 from .transformation.u_matrix import CoulombTensor
 
 class CDmft(object):
@@ -111,7 +112,7 @@ class CDmft(object):
         # checks
         for key, val in self.parameters['hop'].items():
             assert type(val) == ndarray, 'The hoppingtensor has to be a dict with tuples as keys and arrays as values'
-        if not tuple([0] * lattice_dim) in p['hop'].keys(): p['hop'].update({tuple([0] * lattice_dim) : array([[0]])})
+        if not tuple([0] * lattice_dim) in p['hop'].keys(): p['hop'].update({tuple([0] * lattice_dim) : zeros([lattice_dim, lattice_dim])})
 
         # Initialize DMFT objects
         if self.parameters['scheme'] == 'cellular_dmft':
@@ -143,11 +144,13 @@ class CDmft(object):
         # Checkout G_loc for blocks after symmetry transformation and initialize solver
         if not ('symmetry_transformation' in p.keys()): p['symmetry_transformation'] = identity(n_sites)
         sym_ind = sym_indices(scheme.g_local(sigma_c_iw, mu), p['symmetry_transformation'])
+        print sym_ind
         imp_sol = Solver(beta = p['beta'], gf_struct = dict(sym_ind), n_tau = p['n_tau'], n_iw = p['n_iw'], n_l = p['n_legendre'])
         if p['verbosity'] > 0: mpi.report('Indices for calculation are:', sym_ind)
         delta_sym_tau = imp_sol.Delta_tau.copy()
         delta_sym_tau.name = '$\Delta_{sym}$'
         g_sym_iw = BlockGf(name_block_generator = [(ind, GfImFreq(indices = dict(sym_ind)[ind], mesh = g_c_iw[CDmft._spins[0]].mesh)) for ind in dict(sym_ind).keys()], make_copies = False)
+        g_0_iw = BlockGf(name_block_generator = [(ind, GfImFreq(indices = dict(sym_ind)[ind], mesh = g_c_iw[CDmft._spins[0]].mesh)) for ind in dict(sym_ind).keys()], make_copies = False)
         sigma_sym_iw = BlockGf(name_block_generator = [(ind, GfImFreq(indices = dict(sym_ind)[ind], mesh = sigma_c_iw[CDmft._spins[0]].mesh)) for ind in dict(sym_ind).keys()], make_copies = False)
 
         # DMFT loop
@@ -175,11 +178,10 @@ class CDmft(object):
             if mpi.is_master_node() and p['verbosity'] > 1: checktransf_plot(g_sym_iw, p['archive'][0:-3] + 'Gchecktransf' + str(loop_nr) + '.png')
 
             # Dyson equation for the Weiss-field
-            _temp = inverse(sigma_sym_iw + inverse(g_sym_iw))
-            for key, block in _temp:
-                imp_sol.G0_iw[key] << block
-            del _temp
-            if mpi.is_master_node() and p['verbosity'] > 1: checktransf_plot(imp_sol.G0_iw, p['archive'][0:-3] + 'Gweisscheck' + str(loop_nr) + '.png')
+            for s, b in g_0_iw: b << inverse(sigma_sym_iw[s] + inverse(g_sym_iw[s]) + hop_loc_sym(p['hop'][(0, 0)], p['symmetry_transformation'], sym_ind)[s])
+            if mpi.is_master_node() and p['verbosity'] > 1: 
+                checktransf_plot(g_0_iw, p['archive'][0:-3] + 'Gweisscheck' + str(loop_nr) + '.png')
+                checksym_plot(inverse(g_0_iw), p['archive'][0:-3] + 'invGweisscheckconst' + str(loop_nr) + '.png')
 
             # Solve imuprity problem
             rnames = random_generator_names_list()
@@ -190,7 +192,8 @@ class CDmft(object):
             for i in solver_parameters:
                 if i in p.keys():
                     pp[i] = p[i]
-            h_loc = h_loc_sym(p['u'], p['hop'][(0, 0)], p['symmetry_transformation'], sym_ind, p['verbosity'])
+            imp_sol.G0_iw << g_0_iw
+            h_loc = h_loc_sym(p['u'], p['mu'], p['hop'][(0, 0)], p['symmetry_transformation'], sym_ind, p['verbosity'])
             imp_sol.solve(h_loc = h_loc, **pp)
             delta_sym_tau << imp_sol.Delta_tau
 
@@ -200,13 +203,13 @@ class CDmft(object):
                     g_sym_iw[name] << LegendreToMatsubara(g_l)
                 g_sym_iw_unfitted = g_sym_iw.copy()
                 sigma_sym_iw_unfitted = g_sym_iw.copy()
-                sigma_sym_iw_unfitted << inverse(imp_sol.G0_iw) - inverse(g_sym_iw)
+                sigma_sym_iw_unfitted << inverse(g_0_iw) - inverse(g_sym_iw)
             else:
                 for name, g_tau in imp_sol.G_tau:
                     g_sym_iw[name].set_from_fourier(g_tau)
                 g_sym_iw_unfitted = g_sym_iw.copy()
                 sigma_sym_iw_unfitted = g_sym_iw.copy()
-                sigma_sym_iw_unfitted << inverse(imp_sol.G0_iw) - inverse(g_sym_iw)
+                sigma_sym_iw_unfitted << inverse(g_0_iw) - inverse(g_sym_iw)
                 if 'fit_tail' in p:
                     if p['fit_tail']:
                         for name, g in g_sym_iw:
@@ -225,8 +228,7 @@ class CDmft(object):
             if 'mix_coeff' in p.keys(): g_c_iw << mix(g_c_iw, p['mix_coeff'])
             g_c_iw << clip_g(g_c_iw, p['clipping_threshold'])
             g_sym_iw << g_sym(g_c_iw, p['symmetry_transformation'], sym_ind)
-
-            sigma_sym_iw << inverse(imp_sol.G0_iw) - inverse(g_sym_iw)
+            sigma_sym_iw << inverse(g_0_iw) - inverse(g_sym_iw)
 
             # Backtransformation to site-basis
             g_c_iw << g_c(g_sym_iw, p['symmetry_transformation'], sym_ind)
@@ -259,6 +261,8 @@ class CDmft(object):
                 a_l['density'] = density
                 a_l['sign'] = imp_sol.average_sign
                 a_l['spectrum'] = get_spectrum(imp_sol)
+                a_l['eps'] = scheme.eps_rbz
+                a_l['rbz_grid'] = scheme.rbz_grid
                 a_l.create_group('sym_indices')
                 a_l['sym_indices'].update(dict(sym_ind))
                 duration = time() - duration
@@ -316,7 +320,8 @@ class CDmft(object):
 
         a = HDFArchive(p['archive'], 'r')
         if a['Results'][str(self.last_loop())].is_group('G_sym_l'):
-            plot_from_archive(p['archive'], 'G_sym_l', spins = dict(load_sym_indices(p['archive'], -1)).keys())
+            oplot(self.load('G_sym_l'))
+            plt.gca().set_ylabel('$G_sym(l)$')
             pp.savefig()
             plt.close()
         del a

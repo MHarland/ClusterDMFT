@@ -10,6 +10,8 @@ from .periodization.selfenergy_periodization import Periodization as SigmaPeriod
 class Cellular_DMFT(object):
     def __init__(self, lattice_vectors, clustersite_pos, hopping, n_kpts):
         self.k_sum = _init_k_sum(lattice_vectors, clustersite_pos, hopping, n_kpts)
+        self.eps_rbz = self.k_sum.Hopping
+        self.rbz_grid = self.k_sum.BZ_Points
 
     def g_local(self, sigma, mu):
         return self.k_sum(mu = mu, Sigma = sigma)
