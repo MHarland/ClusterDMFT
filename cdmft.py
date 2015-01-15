@@ -200,15 +200,15 @@ class CDmft(object):
             if p['measure_g_l']:
                 for name, g_l in imp_sol.G_l:
                     g_sym_iw[name] << LegendreToMatsubara(g_l)
-                g_sym_iw_unfitted = g_sym_iw.copy()
-                sigma_sym_iw_unfitted = g_sym_iw.copy()
-                for s, b in sigma_sym_iw_unfitted: b << inverse(g_0_iw[s]) - inverse(g_sym_iw[s]) - hop_loc_sym(p['hop'][(0, 0)], p['symmetry_transformation'], sym_ind)[s]
+                g_sym_iw_raw = g_sym_iw.copy()
+                sigma_sym_iw_raw = g_sym_iw.copy()
+                for s, b in sigma_sym_iw_raw: b << inverse(g_0_iw[s]) - inverse(g_sym_iw[s]) - hop_loc_sym(p['hop'][(0, 0)], p['symmetry_transformation'], sym_ind)[s]
             else:
                 for name, g_tau in imp_sol.G_tau:
                     g_sym_iw[name].set_from_fourier(g_tau)
-                g_sym_iw_unfitted = g_sym_iw.copy()
-                sigma_sym_iw_unfitted = g_sym_iw.copy()
-                sigma_sym_iw_unfitted << inverse(g_0_iw) - inverse(g_sym_iw)
+                g_sym_iw_raw = g_sym_iw.copy()
+                sigma_sym_iw_raw = g_sym_iw.copy()
+                sigma_sym_iw_raw << inverse(g_0_iw) - inverse(g_sym_iw)
                 if 'fit_tail' in p:
                     if p['fit_tail']:
                         for name, g in g_sym_iw:
@@ -232,8 +232,8 @@ class CDmft(object):
             # Backtransformation to site-basis
             g_c_iw << g_c(g_sym_iw, p['symmetry_transformation'], sym_ind)
             sigma_c_iw << g_c(sigma_sym_iw, p['symmetry_transformation'], sym_ind)
-            sigma_c_iw_unfitted = sigma_c_iw.copy()
-            sigma_c_iw_unfitted << g_c(sigma_sym_iw_unfitted, p['symmetry_transformation'], sym_ind)
+            sigma_c_iw_raw = sigma_c_iw.copy()
+            sigma_c_iw_raw << g_c(sigma_sym_iw_raw, p['symmetry_transformation'], sym_ind)
 
             density = g_c_iw.total_density()
             if mpi.is_master_node():
@@ -253,9 +253,9 @@ class CDmft(object):
                         a_l['G_sym_l'] = imp_sol.G_l
                 a_l['G_c_iw'] = g_c_iw
                 a_l['G_sym_iw'] = g_sym_iw
-                a_l['G_sym_iw_unfitted'] = g_sym_iw_unfitted
+                a_l['G_sym_iw_raw'] = g_sym_iw_raw
                 a_l['Sigma_c_iw'] = sigma_c_iw
-                a_l['Sigma_c_iw_unfitted'] = sigma_c_iw_unfitted
+                a_l['Sigma_c_iw_raw'] = sigma_c_iw_raw
                 a_l['mu'] = mu
                 a_l['density'] = density
                 a_l['sign'] = imp_sol.average_sign
@@ -342,7 +342,7 @@ class CDmft(object):
             c = 0
             for ind in inds:
                 for orb in inds[ind]:
-                    plot_from_archive(p['archive'], 'G_sym_iw_unfitted', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(n_graphs)))
+                    plot_from_archive(p['archive'], 'G_sym_iw_raw', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(n_graphs)))
                     plot_from_archive(p['archive'], 'G_sym_iw', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = '+', color = cm.jet(c/float(n_graphs)))
                     c += 1
             pp.savefig()
@@ -350,7 +350,7 @@ class CDmft(object):
 
         a = HDFArchive(self.parameters['archive'], 'r')
         in_archive = False
-        if 'Sigma_c_iw_unfitted' in a['Results'][str(self.last_loop())]:
+        if 'Sigma_c_iw_raw' in a['Results'][str(self.last_loop())]:
             in_archive = True
         del a
         if in_archive:
@@ -358,8 +358,8 @@ class CDmft(object):
                 c = 0
                 for i in range(n_sites):
                     for j in range(n_sites):
-                        plot_from_archive(p['archive'], 'Sigma_c_iw_unfitted', indices = [(i, j)], spins = ['up'], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(n_sites**2)))
-                        plot_from_archive(p['archive'], 'Sigma_c_iw_unfitted', indices = [(i, j)], spins = ['down'], RI = m, x_window = prange, marker = '+', color = cm.jet(c/float(n_sites**2)))
+                        plot_from_archive(p['archive'], 'Sigma_c_iw_raw', indices = [(i, j)], spins = ['up'], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(n_sites**2)))
+                        plot_from_archive(p['archive'], 'Sigma_c_iw_raw', indices = [(i, j)], spins = ['down'], RI = m, x_window = prange, marker = '+', color = cm.jet(c/float(n_sites**2)))
                         c += 1
                 pp.savefig()
                 plt.close()
