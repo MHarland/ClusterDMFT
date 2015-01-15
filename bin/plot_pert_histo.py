@@ -9,8 +9,8 @@ for n, filename in enumerate(sys.argv[1:]):
     data = loadtxt(filename)
     max_order = 0
     cum = 0
-    while cum < 1.0:
-        cum += data[max_order, 1]
+    while cum < 1.0 and max_order < 100:
+        cum = data[max_order, 2]
         max_order += 1
     if max_order > max_plot_order: max_plot_order = max_order
     plt.plot(data[:, 0], data[:, 1], label = filename[17:-4], color = cm.jet(n /float(len(sys.argv[1:]) - 1)))
