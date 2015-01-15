@@ -342,7 +342,7 @@ class CDmft(object):
             c = 0
             for ind in inds:
                 for orb in inds[ind]:
-                    plot_from_archive(p['archive'], 'G_sym_iw_raw', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(n_graphs)))
+                    if 'Sigma_c_iw_raw' in a['Results'][str(self.last_loop())]: plot_from_archive(p['archive'], 'G_sym_iw_raw', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(n_graphs)))
                     plot_from_archive(p['archive'], 'G_sym_iw', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = '+', color = cm.jet(c/float(n_graphs)))
                     c += 1
             pp.savefig()
