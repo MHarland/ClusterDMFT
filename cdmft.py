@@ -320,7 +320,7 @@ class CDmft(object):
         a = HDFArchive(p['archive'], 'r')
         if a['Results'][str(self.last_loop())].is_group('G_sym_l'):
             oplot(self.load('G_sym_l'))
-            plt.gca().set_ylabel('$G_sym(l)$')
+            plt.gca().set_ylabel('$G_{sym}(l)$')
             pp.savefig()
             plt.close()
         del a
@@ -335,6 +335,7 @@ class CDmft(object):
 
         inds = load_sym_indices(p['archive'], -1)
 
+        a = HDFArchive(self.parameters['archive'], 'r')
         n_graphs = 0
         for spin, orb_list in inds.items():
             n_graphs += len(orb_list)
@@ -347,6 +348,7 @@ class CDmft(object):
                     c += 1
             pp.savefig()
             plt.close()
+        del a
 
         a = HDFArchive(self.parameters['archive'], 'r')
         in_archive = False
