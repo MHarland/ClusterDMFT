@@ -203,7 +203,7 @@ class CDmft(object):
                     g_sym_iw[name] << LegendreToMatsubara(g_l)
                 g_sym_iw_unfitted = g_sym_iw.copy()
                 sigma_sym_iw_unfitted = g_sym_iw.copy()
-                sigma_sym_iw_unfitted << inverse(g_0_iw) - inverse(g_sym_iw)
+                for s, b in sigma_sym_iw_unfitted: b << inverse(g_0_iw[s]) - inverse(g_sym_iw[s]) - hop_loc_sym(p['hop'][(0, 0)], p['symmetry_transformation'], sym_ind)[s]
             else:
                 for name, g_tau in imp_sol.G_tau:
                     g_sym_iw[name].set_from_fourier(g_tau)
@@ -228,7 +228,7 @@ class CDmft(object):
             if 'mix_coeff' in p.keys(): g_c_iw << mix(g_c_iw, p['mix_coeff'])
             g_c_iw << clip_g(g_c_iw, p['clipping_threshold'])
             g_sym_iw << g_sym(g_c_iw, p['symmetry_transformation'], sym_ind)
-            sigma_sym_iw << inverse(g_0_iw) - inverse(g_sym_iw)
+            for s, b in sigma_sym_iw: b << inverse(g_0_iw[s]) - inverse(g_sym_iw[s]) - hop_loc_sym(p['hop'][(0, 0)], p['symmetry_transformation'], sym_ind)[s]
 
             # Backtransformation to site-basis
             g_c_iw << g_c(g_sym_iw, p['symmetry_transformation'], sym_ind)
@@ -424,7 +424,7 @@ class CDmft(object):
             plt.close()
         del a
 
-        arch_text = archive_content(self.parameters['archive'], dont_exp = ['parameters', 'bz_grid', 'bz_weights'])
+        arch_text = archive_content(self.parameters['archive'], dont_exp = ['parameters', 'bz_grid', 'bz_weights', 'eps', 'rbz_grid'])
         arch_text += archive_content(self.parameters['archive'], group = ['parameters'])
         line = 1
         page_text = str()
