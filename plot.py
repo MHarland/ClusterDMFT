@@ -76,6 +76,15 @@ def plot_from_archive(archive, function, loops = [-1], indices = [(0, 0)], spins
                     plt.ylabel('$G_{sym}(l_n)$')
                 else:
                     oplot(f[s][ind], name = f_name, **kwargs)
+                    y_ax_lab = '$'
+                    if 'G' in f_name: y_ax_lab += 'G'
+                    elif 'Sigma' in f_name: y_ax_lab += 'Sigma'
+                    elif 'Delta' in f_name: y_ax_lab += 'Delta'
+                    y_ax_lab += "("
+                    if 'iw' in f_name: y_ax_lab += 'i\omega_n'
+                    elif 'tau' in f_name : y_ax_lab += '\tau'
+                    y_ax_lab += ')$'
+                    plt.gca().set_ylabel(y_ax_lab)
     del archive
 
 def checksym_plot(g, fname, **kwargs):
