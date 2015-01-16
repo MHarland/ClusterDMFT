@@ -14,7 +14,7 @@ def m_transformed(m, u):
             umu[i, j] = m_transform(m, u, i, j)
     return umu
 
-def hop_loc_sym(hop_loc, u, sym_inds):
+def energy_loc_sym(hop_loc, u, sym_inds):
     u = array(u)
     hop_loc = array(hop_loc)
     h_sym = dict()

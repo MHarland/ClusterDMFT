@@ -20,7 +20,7 @@ from .post_process_g import clip_g, tail_start, impose_site_symmetries, impose_p
 from .spectrum import get_spectrum
 from .transformation.gf import g_sym, g_c, sym_indices
 from .transformation.operators import h_loc_sym
-from .transformation.other import hop_loc_sym
+from .transformation.other import energy_loc_sym
 from .transformation.u_matrix import CoulombTensor
 
 class CDmft(object):
@@ -131,12 +131,11 @@ class CDmft(object):
         sigma_c_iw = BlockGf(name_block_generator = [(s, GfImFreq(indices = sites, beta = p['beta'], n_points = p['n_iw'])) for s in CDmft._spins], name = '$\Sigma_c$')
         if 'Sigma_c_iw' in p.keys(): sigma_c_iw << p['Sigma_c_iw']
         if 'mu' in p.keys():
-            mu0 = p['mu']
+            mu = p['mu']
         elif self.next_loop() > 0:
-            mu0 = self.load('mu')
+            mu = self.load('mu')
         else:
-            mu0 = p['u'] * .5
-        dmu = 0
+            mu = p['u'] * .5
         if self.next_loop() > 0:
             mix = MixUpdate(self.load('G_c_iw'))
         else:
@@ -144,7 +143,7 @@ class CDmft(object):
 
         # Checkout G_loc for blocks after symmetry transformation and initialize solver
         if not ('symmetry_transformation' in p.keys()): p['symmetry_transformation'] = identity(n_sites)
-        sym_ind = sym_indices(scheme.g_local(sigma_c_iw, dmu), p['symmetry_transformation'])
+        sym_ind = sym_indices(scheme.g_local(sigma_c_iw, mu), p['symmetry_transformation'])
         imp_sol = Solver(beta = p['beta'], gf_struct = dict(sym_ind), n_tau = p['n_tau'], n_iw = p['n_iw'], n_l = p['n_legendre'])
         if p['verbosity'] > 0: mpi.report('Indices for calculation are:', sym_ind)
         delta_sym_tau = imp_sol.Delta_tau.copy()
@@ -158,18 +157,18 @@ class CDmft(object):
             if mpi.is_master_node(): mpi.report('DMFT-loop nr. %s'%loop_nr)
 
             # Estimate mu for a given filling or vice versa
-            dens = lambda dmu : scheme.g_local(sigma_c_iw, dmu).total_density()
+            dens = lambda mu : scheme.g_local(sigma_c_iw, mu).total_density()
             if 'density' in p.keys():
                 if p['density']:
-                    dmu, density0 = dichotomy(function = dens, x_init = dmu, 
+                    mu, density0 = dichotomy(function = dens, x_init = mu, 
                                              y_value = p['density'], 
                                              precision_on_y = 0.001, delta_x = 0.5,
-                                             max_loops = 1000, x_name = 'dmu', 
+                                             max_loops = 1000, x_name = 'mu', 
                                              y_name = 'density', verbosity = 0)
-            if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('mu: %s'%(mu0 + dmu))
+            if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('mu: %s'%(mu))
 
             # Inverse FT
-            g_c_iw << scheme.g_local(sigma_c_iw, dmu)
+            g_c_iw << scheme.g_local(sigma_c_iw, mu)
             if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(g_c_iw, p['archive'][0:-3] + 'Gchecksym' + str(loop_nr) + '.png')
 
             # Use transformation to (block-)diagonalize G: G_sym = U.G.U_dag
@@ -177,8 +176,9 @@ class CDmft(object):
             sigma_sym_iw << g_sym(sigma_c_iw, p['symmetry_transformation'], sym_ind)
             if mpi.is_master_node() and p['verbosity'] > 1: checktransf_plot(g_sym_iw, p['archive'][0:-3] + 'Gchecktransf' + str(loop_nr) + '.png')
 
-            # Dyson equation for the Weiss-field
-            for s, b in g_0_iw: b << inverse(sigma_sym_iw[s] + inverse(g_sym_iw[s]) + hop_loc_sym(p['hop'][(0, 0)], p['symmetry_transformation'], sym_ind)[s])
+            # Dyson-like equation for the Weiss-field
+            energy_loc = array(p['hop'][(0, 0)]) - mu * identity(lattice_dim)
+            for s, b in g_0_iw: b << inverse(sigma_sym_iw[s] + inverse(g_sym_iw[s]) + energy_loc_sym(energy_loc, p['symmetry_transformation'], sym_ind)[s])
             if mpi.is_master_node() and p['verbosity'] > 1: 
                 checktransf_plot(g_0_iw, p['archive'][0:-3] + 'Gweisscheck' + str(loop_nr) + '.png')
                 checksym_plot(inverse(g_0_iw), p['archive'][0:-3] + 'invGweisscheckconst' + str(loop_nr) + '.png')
@@ -193,7 +193,7 @@ class CDmft(object):
                 if i in p.keys():
                     pp[i] = p[i]
             imp_sol.G0_iw << g_0_iw
-            h_loc = h_loc_sym(p['u'], mu0, p['hop'][(0, 0)], p['symmetry_transformation'], sym_ind, p['verbosity'])
+            h_loc = h_loc_sym(p['u'], mu, p['hop'][(0, 0)], p['symmetry_transformation'], sym_ind, p['verbosity'])
             imp_sol.solve(h_loc = h_loc, **pp)
             delta_sym_tau << imp_sol.Delta_tau
 
@@ -203,7 +203,7 @@ class CDmft(object):
                     g_sym_iw[name] << LegendreToMatsubara(g_l)
                 g_sym_iw_raw = g_sym_iw.copy()
                 sigma_sym_iw_raw = g_sym_iw.copy()
-                for s, b in sigma_sym_iw_raw: b << inverse(g_0_iw[s]) - inverse(g_sym_iw[s]) - hop_loc_sym(p['hop'][(0, 0)], p['symmetry_transformation'], sym_ind)[s]
+                for s, b in sigma_sym_iw_raw: b << inverse(g_0_iw[s]) - inverse(g_sym_iw[s]) - energy_loc_sym(energy_loc, p['symmetry_transformation'], sym_ind)[s]
             else:
                 for name, g_tau in imp_sol.G_tau:
                     g_sym_iw[name].set_from_fourier(g_tau)
@@ -257,8 +257,7 @@ class CDmft(object):
                 a_l['G_sym_iw_raw'] = g_sym_iw_raw
                 a_l['Sigma_c_iw'] = sigma_c_iw
                 a_l['Sigma_c_iw_raw'] = sigma_c_iw_raw
-                a_l['mu'] = dmu + mu0
-                a_l['dmu'] = dmu
+                a_l['mu'] = mu
                 a_l['density'] = density
                 a_l['sign'] = imp_sol.average_sign
                 a_l['spectrum'] = get_spectrum(imp_sol)
@@ -277,7 +276,7 @@ class CDmft(object):
                 else:
                     a_r['n_dmft_loops'] = 1
                 a['parameters']['Sigma_c_iw'] = sigma_c_iw
-                a['parameters']['dmu'] = dmu
+                a['parameters']['mu'] = mu
                 del a
                 mpi.report('')
 
