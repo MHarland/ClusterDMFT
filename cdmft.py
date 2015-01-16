@@ -131,11 +131,12 @@ class CDmft(object):
         sigma_c_iw = BlockGf(name_block_generator = [(s, GfImFreq(indices = sites, beta = p['beta'], n_points = p['n_iw'])) for s in CDmft._spins], name = '$\Sigma_c$')
         if 'Sigma_c_iw' in p.keys(): sigma_c_iw << p['Sigma_c_iw']
         if 'mu' in p.keys():
-            mu = p['mu']
+            mu0 = p['mu']
         elif self.next_loop() > 0:
-            mu = self.load('mu')
+            mu0 = self.load('mu')
         else:
-            mu = 0
+            mu0 = p['u'] * .5
+        dmu = 0
         if self.next_loop() > 0:
             mix = MixUpdate(self.load('G_c_iw'))
         else:
@@ -143,7 +144,7 @@ class CDmft(object):
 
         # Checkout G_loc for blocks after symmetry transformation and initialize solver
         if not ('symmetry_transformation' in p.keys()): p['symmetry_transformation'] = identity(n_sites)
-        sym_ind = sym_indices(scheme.g_local(sigma_c_iw, mu), p['symmetry_transformation'])
+        sym_ind = sym_indices(scheme.g_local(sigma_c_iw, dmu), p['symmetry_transformation'])
         imp_sol = Solver(beta = p['beta'], gf_struct = dict(sym_ind), n_tau = p['n_tau'], n_iw = p['n_iw'], n_l = p['n_legendre'])
         if p['verbosity'] > 0: mpi.report('Indices for calculation are:', sym_ind)
         delta_sym_tau = imp_sol.Delta_tau.copy()
@@ -157,18 +158,18 @@ class CDmft(object):
             if mpi.is_master_node(): mpi.report('DMFT-loop nr. %s'%loop_nr)
 
             # Estimate mu for a given filling or vice versa
-            dens = lambda mu : scheme.g_local(sigma_c_iw, mu).total_density()
+            dens = lambda dmu : scheme.g_local(sigma_c_iw, dmu).total_density()
             if 'density' in p.keys():
                 if p['density']:
-                    mu, density0 = dichotomy(function = dens, x_init = mu, 
+                    dmu, density0 = dichotomy(function = dens, x_init = dmu, 
                                              y_value = p['density'], 
                                              precision_on_y = 0.001, delta_x = 0.5,
-                                             max_loops = 1000, x_name = 'mu', 
+                                             max_loops = 1000, x_name = 'dmu', 
                                              y_name = 'density', verbosity = 0)
-            if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('mu: %s'%mu)
+            if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('mu: %s'%(mu0 + dmu))
 
             # Inverse FT
-            g_c_iw << scheme.g_local(sigma_c_iw, mu)
+            g_c_iw << scheme.g_local(sigma_c_iw, dmu)
             if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(g_c_iw, p['archive'][0:-3] + 'Gchecksym' + str(loop_nr) + '.png')
 
             # Use transformation to (block-)diagonalize G: G_sym = U.G.U_dag
@@ -192,7 +193,7 @@ class CDmft(object):
                 if i in p.keys():
                     pp[i] = p[i]
             imp_sol.G0_iw << g_0_iw
-            h_loc = h_loc_sym(p['u'], p['mu'], p['hop'][(0, 0)], p['symmetry_transformation'], sym_ind, p['verbosity'])
+            h_loc = h_loc_sym(p['u'], mu0, p['hop'][(0, 0)], p['symmetry_transformation'], sym_ind, p['verbosity'])
             imp_sol.solve(h_loc = h_loc, **pp)
             delta_sym_tau << imp_sol.Delta_tau
 
@@ -256,7 +257,8 @@ class CDmft(object):
                 a_l['G_sym_iw_raw'] = g_sym_iw_raw
                 a_l['Sigma_c_iw'] = sigma_c_iw
                 a_l['Sigma_c_iw_raw'] = sigma_c_iw_raw
-                a_l['mu'] = mu
+                a_l['mu'] = dmu + mu0
+                a_l['dmu'] = dmu
                 a_l['density'] = density
                 a_l['sign'] = imp_sol.average_sign
                 a_l['spectrum'] = get_spectrum(imp_sol)
@@ -275,7 +277,7 @@ class CDmft(object):
                 else:
                     a_r['n_dmft_loops'] = 1
                 a['parameters']['Sigma_c_iw'] = sigma_c_iw
-                a['parameters']['mu'] = mu
+                a['parameters']['dmu'] = dmu
                 del a
                 mpi.report('')
 
