@@ -40,7 +40,7 @@ def h_loc_sym(u_int, mu, hop_loc, u, sym_indices, verbosity = 0):
         mpi.report('transformed Coulomb tensor is:')
         u_c_sym.show()
 
-    mu_matrix = -u_int * .5 * identity(dim)
+    mu_matrix = - mu * identity(dim)
     h_loc = sum_list([sum_list([sum_list([_unblocked_c_dag_sym(s, i, sym_indices) * m_transform(mu_matrix, u, i, j) * _unblocked_c_sym(s, j, sym_indices) for j in sites]) for i in sites]) for s in spins])
     h_loc += sum_list([sum_list([sum_list([_unblocked_c_dag_sym(s, i, sym_indices) * m_transform(hop_loc, u, i, j) * _unblocked_c_sym(s, j, sym_indices) for j in sites]) for i in sites]) for s in spins])
     for s1 in spins:
