@@ -2,10 +2,10 @@ from numpy import array, identity, dot
 from pytriqs.utility import mpi
 from pytriqs.operators import c as C, c_dag as C_dag
 
-from .u_matrix import CoulombTensor
+from .u_matrix import CoulombTensor, NNCoulombTensor
 from .other import sum_list, m_transform
 
-def h_loc_sym(u_int, mu, hop_loc, u, sym_indices, verbosity = 0):
+def h_loc_sym(u_int, mu, hop_loc, u, sym_indices, u_nn_int = False, verbosity = 0):
     """
     transform operators and H_loc 
     express operators in site-basis by operators in new (energyeigen)-basis
@@ -21,6 +21,9 @@ def h_loc_sym(u_int, mu, hop_loc, u, sym_indices, verbosity = 0):
     udag = u.T.conjugate()
     u_c = CoulombTensor(u_int, dim)
     u_c_sym = u_c.transform(u)
+    if u_nn_int: 
+        u_nn_c = NNCoulombTensor(u_nn_int, dim)
+        u_nn_c_sym = u_nn_c.transform(u)
     assert dot(u, udag).all() == identity(len(u)).all(), 'transformation not unitary'
     c = dict()
     c_dag = dict()
@@ -50,6 +53,15 @@ def h_loc_sym(u_int, mu, hop_loc, u, sym_indices, verbosity = 0):
                     for k in sites:
                         for l in sites:
                             h_loc += u_c_sym[i, j, k, l, s1, s2] * _unblocked_c_dag_sym(s1, i, sym_indices) * _unblocked_c_dag_sym(s2, j, sym_indices) *  _unblocked_c_sym(s2, l, sym_indices) * _unblocked_c_sym(s1, k, sym_indices)
+    if u_nn_int:
+        for s1 in spins:
+            for s2 in spins:
+                for i in sites:
+                    for j in sites:
+                        for k in sites:
+                            for l in sites:
+                                h_loc += u_nn_c_sym[i, j, k, l, s1, s2] * _unblocked_c_dag_sym(s1, i, sym_indices) * _unblocked_c_dag_sym(s2, j, sym_indices) *  _unblocked_c_sym(s2, l, sym_indices) * _unblocked_c_sym(s1, k, sym_indices)
+
     if verbosity > 0 and mpi.is_master_node():
         mpi.report('H_loc:', h_loc)
     return h_loc

@@ -63,6 +63,20 @@ class CoulombTensor(object):
         transformed.data = result
         return transformed
 
+class NNCoulombTensor(CoulombTensor):
+
+    def __init__(self, u_int, dimension):
+        self.u_int = u_int
+        self.d = dimension
+        self.data = zeros([self.d, self.d, self.d, self.d, 2, 2], dtype = float)
+        for i in range(self.d):
+            for j in range(self.d):
+                for k in range(self.d):
+                    for l in range(self.d):
+                        for s1 in range(2):
+                            for s2 in range(2):
+                                self.data[i, j, k, l, s1, s2] = u_int * delta(i, k) * delta(j, l) * (1 - delta(i, j)) * .5
+
 def sum_list(list0):
     assert type(list0) == list, 'Parameter is not a list'
     if list0:
