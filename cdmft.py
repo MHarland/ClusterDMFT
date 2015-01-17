@@ -106,6 +106,7 @@ class CDmft(object):
         n_sites = len(p['clustersite_pos'])
         sites = range(n_sites)
         lattice_dim = len(p['hop'].keys()[0])
+        if not 'v' in p.keys(): p['v'] = 0
 
         if mpi.is_master_node(): duration = time()
 
@@ -199,7 +200,7 @@ class CDmft(object):
                 if i in p.keys():
                     pp[i] = p[i]
             imp_sol.G0_iw << g_0_iw
-            h_loc = h_loc_sym(p['u'], mu, p['hop'][(0, 0)], p['symmetry_transformation'], sym_ind, p['verbosity'])
+            h_loc = h_loc_sym(p['u'], mu, p['hop'][(0, 0)], p['symmetry_transformation'], sym_ind, p['v'], p['verbosity'])
             imp_sol.solve(h_loc = h_loc, **pp)
             delta_sym_tau << imp_sol.Delta_tau
 
