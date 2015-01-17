@@ -183,7 +183,7 @@ class CDmft(object):
             if mpi.is_master_node() and p['verbosity'] > 1: checktransf_plot(g_sym_iw, p['archive'][0:-3] + 'Gchecktransf' + str(loop_nr) + '.png')
 
             # Dyson-like equation for the Weiss-field
-            energy_loc = array(p['hop'][(0, 0)]) - dmu * identity(lattice_dim)
+            energy_loc = array(p['hop'][(0, 0)]) - dmu * identity(n_sites)
             for s, b in g_0_iw: b << inverse(sigma_sym_iw[s] + inverse(g_sym_iw[s]) + energy_loc_sym(energy_loc, p['symmetry_transformation'], sym_ind)[s])
             if mpi.is_master_node() and p['verbosity'] > 1: 
                 checktransf_plot(g_0_iw, p['archive'][0:-3] + 'Gweisscheck' + str(loop_nr) + '.png')
