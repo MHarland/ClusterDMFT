@@ -259,6 +259,9 @@ class CDmft(object):
                 if 'measure_g_l' in p.keys(): 
                     if p['measure_g_l']: 
                         a_l['G_sym_l'] = imp_sol.G_l
+                if 'measure_g_tau' in p.keys(): 
+                    if p['measure_g_tau']: 
+                        a_l['G_sym_tau'] = imp_sol.G_tau
                 a_l['G_c_iw'] = g_c_iw
                 a_l['G_sym_iw'] = g_sym_iw
                 a_l['G_sym_iw_raw'] = g_sym_iw_raw

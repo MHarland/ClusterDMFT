@@ -59,14 +59,13 @@ class CoulombTensor(object):
                             for l in range(self.d):
                                 result[i, j, k, l, s1, s2] = sum_list([sum_list([sum_list([sum_list([self.data[m, n, o, p, s1, s2] * u[i, m] * u[j, n] * u[l, p].conjugate() * u[k, o].conjugate() for m in range(self.d)]) for n in range(self.d)]) for o in range(self.d)]) for p in range(self.d)])
 
-        transformed = CoulombTensor(self.u_int, self.d)
-        transformed.data = result
-        return transformed
+        self.data = result
+        return self
 
 class NNCoulombTensor(CoulombTensor):
 
     def __init__(self, u_int, dimension):
-        self.u_int = u_int
+        self.u_int = array(u_int)
         self.d = dimension
         self.data = zeros([self.d, self.d, self.d, self.d, 2, 2], dtype = float)
         for i in range(self.d):
@@ -75,7 +74,7 @@ class NNCoulombTensor(CoulombTensor):
                     for l in range(self.d):
                         for s1 in range(2):
                             for s2 in range(2):
-                                self.data[i, j, k, l, s1, s2] = u_int * delta(i, k) * delta(j, l) * (1 - delta(i, j)) * .5
+                                self.data[i, j, k, l, s1, s2] = self.u_int[i, j] * delta(i, k) * delta(j, l) * .5
 
 def sum_list(list0):
     assert type(list0) == list, 'Parameter is not a list'
