@@ -1,3 +1,4 @@
+from ..post_process_g import clip_g
 from pytriqs.gf.local import BlockGf, GfImFreq, iOmega_n, inverse, GfReFreq
 from pytriqs.gf.local.descriptor_base import Const
 from pytriqs.archive import HDFArchive
@@ -258,7 +259,7 @@ class PeriodizationBase(object):
         plt.ylabel('$k_y$')
         plt.title(pname + '$(k, i\omega_' + str(matsubara_freq) + ')$')
 
-def _tr_g_lat_pade(g_lat, pade_n_omega_n = 101, pade_eta = 10**(-2), dos_n_points = 1200, dos_window = (-10, 10)):
+def _tr_g_lat_pade(g_lat, pade_n_omega_n = 101, pade_eta = 10**(-2), dos_n_points = 1200, dos_window = (-10, 10), clip_threshold = 0.01):
     tr_g_lat_pade = list()
     for gk in g_lat:
         tr_spin_g = GfImFreq(indices = range(len(gk['up'].data[0, :, :])), mesh = gk.mesh)
@@ -274,7 +275,7 @@ def _tr_g_lat_pade(g_lat, pade_n_omega_n = 101, pade_eta = 10**(-2), dos_n_point
         tr_g = tr_band_g
         tr_g_lat_pade.append(GfReFreq(indices = [0], window = dos_window,
                                       n_points = dos_n_points, name = 'Tr$G_{lat}$'))
-        tr_g_lat_pade[-1].set_from_pade(tr_g, n_points = pade_n_omega_n,
+        tr_g_lat_pade[-1].set_from_pade(clip_g(tr_g, clip_threshold), n_points = pade_n_omega_n,
                                         freq_offset = pade_eta)
     return tr_g_lat_pade
 
