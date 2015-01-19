@@ -1,7 +1,0 @@
-Starting on 1 Nodes at : 2014-12-02 18:48:21.416268
-/usr/lib/pymodules/python2.7/matplotlib/colorbar.py:829: RuntimeWarning: invalid value encountered in divide
-  z = np.take(y, i0) + (xn - np.take(b, i0)) * dy / db
-/usr/lib/pymodules/python2.7/matplotlib/colorbar.py:581: RuntimeWarning: invalid value encountered in greater
-  inrange = (ticks > -0.001) & (ticks < 1.001)
-/usr/lib/pymodules/python2.7/matplotlib/colorbar.py:581: RuntimeWarning: invalid value encountered in less
-  inrange = (ticks > -0.001) & (ticks < 1.001)
