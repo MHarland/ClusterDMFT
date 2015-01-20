@@ -184,7 +184,7 @@ class CDmft(object):
             if mpi.is_master_node() and p['verbosity'] > 1: checktransf_plot(g_sym_iw, p['archive'][0:-3] + 'Gchecktransf' + str(loop_nr) + '.png')
 
             # Dyson-like equation for the Weiss-field
-            energy_loc = array(p['hop'][(0, 0)]) - dmu * identity(n_sites)
+            energy_loc = array(p['hop'][tuple([0] * lattice_dim)]) - dmu * identity(n_sites)
             for s, b in g_0_iw: b << inverse(sigma_sym_iw[s] + inverse(g_sym_iw[s]) + energy_loc_sym(energy_loc, p['symmetry_transformation'], sym_ind)[s])
             if mpi.is_master_node() and p['verbosity'] > 1: 
                 checktransf_plot(g_0_iw, p['archive'][0:-3] + 'Gweisscheck' + str(loop_nr) + '.png')
@@ -200,7 +200,7 @@ class CDmft(object):
                 if i in p.keys():
                     pp[i] = p[i]
             imp_sol.G0_iw << g_0_iw
-            h_loc = h_loc_sym(p['u'], mu, p['hop'][(0, 0)], p['symmetry_transformation'], sym_ind, p['v'], p['verbosity'])
+            h_loc = h_loc_sym(p['u'], mu, p['hop'][tuple([0] * lattice_dim)], p['symmetry_transformation'], sym_ind, p['v'], p['verbosity'])
             imp_sol.solve(h_loc = h_loc, **pp)
             delta_sym_tau << imp_sol.Delta_tau
 
