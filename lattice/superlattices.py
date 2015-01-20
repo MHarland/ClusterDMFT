@@ -36,9 +36,7 @@ class sq_sq(Superlattice):
     def get_symmetry_transformation(self):
         return [[0.5, 0.5, 0.5, 0.5], [0.5, 0.5, -0.5, -0.5], [0.5, -0.5, 0.5, -0.5], [0.5, -0.5, -0.5, 0.5]]
 
-"""
-#TODO period shall be 2
-class fcc_tet(Superlattice):
+class pyrochlore(Superlattice):
     def __init__(self, t = -1.):
         Superlattice.__init__(self,
                               [[1, 0, 0], 
@@ -54,7 +52,6 @@ class fcc_tet(Superlattice):
 
     def get_symmetry_transformation(self):
         return [[0.5, 0.5, 0.5, 0.5], [0.5, 0.5, -0.5, -0.5], [0.5, -0.5, 0.5, -0.5], [0.5, -0.5, -0.5, 0.5]]
-"""
 
 class kag_tri(Superlattice):
     def __init__(self, t = -1.):
