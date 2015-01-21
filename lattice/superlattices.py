@@ -36,6 +36,10 @@ class sq_sq(Superlattice):
     def get_symmetry_transformation(self):
         return [[0.5, 0.5, 0.5, 0.5], [0.5, 0.5, -0.5, -0.5], [0.5, -0.5, 0.5, -0.5], [0.5, -0.5, -0.5, 0.5]]
 
+    def get_checkerboard_symmetry_transformation(self):
+        n = 1/sqrt(2)
+        return [[n,0,0,n],[0,n,n,0],[0,-n,n,0],[-n,0,0,n]]
+
 class pyrochlore(Superlattice):
     def __init__(self, t = -1.):
         Superlattice.__init__(self,
