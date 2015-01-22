@@ -57,6 +57,10 @@ class pyrochlore(Superlattice):
     def get_symmetry_transformation(self):
         return [[0.5, 0.5, 0.5, 0.5], [0.5, 0.5, -0.5, -0.5], [0.5, -0.5, 0.5, -0.5], [0.5, -0.5, -0.5, 0.5]]
 
+    def get_dimer_projection(self):
+        n = 1/sqrt(2)
+        return [[n,n,0,0],[n,-n,0,0],[0,0,n,n],[0,0,-n,n]]
+
 class kag_tri(Superlattice):
     def __init__(self, t = -1.):
         Superlattice.__init__(self,
