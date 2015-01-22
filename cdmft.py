@@ -132,16 +132,11 @@ class CDmft(object):
         sigma_c_iw = BlockGf(name_block_generator = [(s, GfImFreq(indices = sites, beta = p['beta'], n_points = p['n_iw'])) for s in CDmft._spins], name = '$\Sigma_c$')
         if 'Sigma_c_iw' in p.keys(): sigma_c_iw << p['Sigma_c_iw']
         if 'mu' in p.keys():
-            mu0 = p['mu']
+            mu = p['mu']
         elif self.next_loop() > 0:
-            mu0 = self.load('mu')
+            mu = self.load('mu')
         else:
-            mu0 = p['u'] * .5
-        if self.next_loop() > 0 and p['density']:
-            dmu = self.load('dmu')
-        else:
-            dmu = 0
-        mu = mu0 + dmu
+            mu = p['u'] * .5
         if self.next_loop() > 0:
             mix = MixUpdate(self.load('G_c_iw'))
         else:
@@ -163,19 +158,18 @@ class CDmft(object):
             if mpi.is_master_node(): mpi.report('DMFT-loop nr. %s'%loop_nr)
 
             # Estimate mu for a given filling or vice versa
-            dens = lambda dmu : scheme.g_local(sigma_c_iw, dmu).total_density()
+            dens = lambda mu : scheme.g_local(sigma_c_iw, mu).total_density()
             if 'density' in p.keys():
                 if p['density']:
-                    dmu, density0 = dichotomy(function = dens, x_init = dmu, 
-                                              y_value = p['density'], 
-                                              precision_on_y = 0.001, delta_x = 0.5,
-                                              max_loops = 1000, x_name = 'dmu', 
-                                              y_name = 'density', verbosity = 0)
-            mu = mu0 + dmu
+                    mu, density0 = dichotomy(function = dens, x_init = mu, 
+                                             y_value = p['density'], 
+                                             precision_on_y = 0.001, delta_x = 0.5,
+                                             max_loops = 1000, x_name = 'mu', 
+                                             y_name = 'density', verbosity = 0)
             if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('mu: %s'%mu)
 
             # Inverse FT
-            g_c_iw << scheme.g_local(sigma_c_iw, dmu)
+            g_c_iw << scheme.g_local(sigma_c_iw, 0)
             if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(g_c_iw, p['archive'][0:-3] + 'Gchecksym' + str(loop_nr) + '.png')
 
             # Use transformation to (block-)diagonalize G: G_sym = U.G.U_dag
@@ -184,7 +178,7 @@ class CDmft(object):
             if mpi.is_master_node() and p['verbosity'] > 1: checktransf_plot(g_sym_iw, p['archive'][0:-3] + 'Gchecktransf' + str(loop_nr) + '.png')
 
             # Dyson-like equation for the Weiss-field
-            energy_loc = array(p['hop'][tuple([0] * lattice_dim)]) - dmu * identity(n_sites)
+            energy_loc = array(p['hop'][tuple([0] * lattice_dim)])
             for s, b in g_0_iw: b << inverse(sigma_sym_iw[s] + inverse(g_sym_iw[s]) + energy_loc_sym(energy_loc, p['symmetry_transformation'], sym_ind)[s])
             if mpi.is_master_node() and p['verbosity'] > 1: 
                 checktransf_plot(g_0_iw, p['archive'][0:-3] + 'Gweisscheck' + str(loop_nr) + '.png')
@@ -268,7 +262,6 @@ class CDmft(object):
                 a_l['Sigma_c_iw'] = sigma_c_iw
                 a_l['Sigma_c_iw_raw'] = sigma_c_iw_raw
                 a_l['mu'] = mu
-                a_l['dmu'] = dmu
                 a_l['density'] = density
                 a_l['sign'] = imp_sol.average_sign
                 a_l['spectrum'] = get_spectrum(imp_sol)
@@ -287,7 +280,7 @@ class CDmft(object):
                 else:
                     a_r['n_dmft_loops'] = 1
                 a['parameters']['Sigma_c_iw'] = sigma_c_iw
-                a['parameters']['dmu'] = dmu
+                a['parameters']['mu'] = mu
                 del a
                 mpi.report('')
 
