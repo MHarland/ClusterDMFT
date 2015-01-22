@@ -59,7 +59,7 @@ class pyrochlore(Superlattice):
 
     def get_dimer_projection(self):
         n = 1/sqrt(2)
-        return [[n,n,0,0],[n,-n,0,0],[0,0,n,n],[0,0,-n,n]]
+        return [[n,-n,0,0],[n,n,0,0],[0,0,n,n],[0,0,-n,n]]
 
 class kag_tri(Superlattice):
     def __init__(self, t = -1.):
