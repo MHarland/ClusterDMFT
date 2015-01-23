@@ -82,6 +82,7 @@ def sym_indices(g_weiss_iw, u):
                     block_is_zero = False
         if block_is_zero:
             blockdiag_len.append(_blockdiag_len)
+            _blockdiag_len = 0
         else:
             _blockdiag_len += 1
 
