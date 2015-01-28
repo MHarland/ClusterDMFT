@@ -138,9 +138,9 @@ class CDmft(object):
         else:
             mu = p['u'] * .5
         if self.next_loop() > 0:
-            mix = MixUpdate(self.load('G_c_iw'))
+            mix = MixUpdate(self.load('G_c_iw'), self.load('mu'))
         else:
-            mix = MixUpdate(g_c_iw)
+            mix = MixUpdate(g_c_iw, mu)
 
         # Checkout G_loc for blocks after symmetry transformation and initialize solver
         if not ('symmetry_transformation' in p.keys()): p['symmetry_transformation'] = identity(n_sites)
@@ -226,7 +226,7 @@ class CDmft(object):
             if 'impose_paramagnetism' in p.keys(): 
                 if p['impose_paramagnetism']: g_c_iw << impose_paramagnetism(g_c_iw)
             if 'site_symmetries' in p.keys(): g_c_iw << impose_site_symmetries(g_c_iw, p['site_symmetries'])
-            if 'mix_coeff' in p.keys(): g_c_iw << mix(g_c_iw, p['mix_coeff'])
+            if 'mix_coeff' in p.keys(): g_c_iw, mu = mix(g_c_iw, mu, p['mix_coeff'])
             g_c_iw << clip_g(g_c_iw, p['clipping_threshold'])
             g_sym_iw << g_sym(g_c_iw, p['symmetry_transformation'], sym_ind)
             for s, b in sigma_sym_iw: b << inverse(g_0_iw[s]) - inverse(g_sym_iw[s]) - energy_loc_sym(energy_loc, p['symmetry_transformation'], sym_ind)[s]

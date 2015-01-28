@@ -73,9 +73,13 @@ def impose_paramagnetism(g):
     return g_s
 
 class MixUpdate(object):
-    def __init__(self, g):
+    def __init__(self, g, mu):
         self.g_old = g.copy()
-    def __call__(self, g, x):
+        self.mu_old = mu
+
+    def __call__(self, g, mu, x):
         g << x * g + (1 - x) * self.g_old
         self.g_old = g.copy()
-        return g
+        mu = x * mu + (1 - x) * self.mu_old
+        self.mu_old = mu
+        return g, mu
