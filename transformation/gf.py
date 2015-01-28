@@ -58,7 +58,7 @@ def sym_indices(g_weiss_iw, u):
     Finds the new blockstructure of G_loc using the unitary transformation u.
     """
     spins = ['up', 'down']
-    almost_zero = 10e-12
+    almost_zero = 10e-5
     n_sites = len(u)
     sites = range(n_sites)
     g_block_structure = zeros([n_sites, n_sites], int)
