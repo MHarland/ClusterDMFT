@@ -30,6 +30,11 @@ def plot_of_loops_from_archive(archive, function, matsubara_freqs = [0], spins =
         for l in range(n_loops):
             mu[l] = arch['Results'][str(l)][function]
         ax.plot(mu, label = '$\mu$', **kwargs)
+    if 'dmu' == function:
+        dmu = empty(n_loops)
+        for l in range(n_loops):
+            dmu[l] = arch['Results'][str(l)][function]
+        ax.plot(dmu, label = '$\\tilde{\\mu}$', **kwargs)
     if 'density' == function:
         density = empty(n_loops)
         for l in range(n_loops):

@@ -130,7 +130,9 @@ class CDmft(object):
             scheme = PCDMFT_Kot(p['lattice_vectors'], [[0, 0, 0]], p['hop_sublat'], p['n_kpts'], p['clustersite_pos_direct'])
         g_c_iw = BlockGf(name_block_generator = [(s, GfImFreq(indices = sites, beta = p['beta'], n_points = p['n_iw'])) for s in CDmft._spins], name = '$G_c$')
         sigma_c_iw = BlockGf(name_block_generator = [(s, GfImFreq(indices = sites, beta = p['beta'], n_points = p['n_iw'])) for s in CDmft._spins], name = '$\Sigma_c$')
+        dmu = 0
         if 'Sigma_c_iw' in p.keys(): sigma_c_iw << p['Sigma_c_iw']
+        if 'dmu' in p.keys(): dmu = p['dmu']
         if 'mu' in p.keys():
             mu = p['mu']
         elif self.next_loop() > 0:
@@ -138,13 +140,13 @@ class CDmft(object):
         else:
             mu = p['u'] * .5
         if self.next_loop() > 0:
-            mix = MixUpdate(self.load('G_c_iw'), self.load('mu'))
+            mix = MixUpdate(self.load('G_c_iw'), self.load('dmu'))
         else:
-            mix = MixUpdate(g_c_iw, mu)
+            mix = MixUpdate(g_c_iw, dmu)
 
         # Checkout G_loc for blocks after symmetry transformation and initialize solver
         if not ('symmetry_transformation' in p.keys()): p['symmetry_transformation'] = identity(n_sites)
-        sym_ind = sym_indices(scheme.g_local(sigma_c_iw, mu), p['symmetry_transformation'])
+        sym_ind = sym_indices(scheme.g_local(sigma_c_iw, dmu), p['symmetry_transformation'])
         imp_sol = Solver(beta = p['beta'], gf_struct = dict(sym_ind), n_tau = p['n_tau'], n_iw = p['n_iw'], n_l = p['n_legendre'])
         if p['verbosity'] > 0: mpi.report('Indices for calculation are:', sym_ind)
         delta_sym_tau = imp_sol.Delta_tau.copy()
@@ -158,19 +160,19 @@ class CDmft(object):
             if mpi.is_master_node(): mpi.report('DMFT-loop nr. %s'%loop_nr)
 
             # Estimate mu for a given filling or vice versa
-            dens = lambda mu : scheme.g_local(sigma_c_iw, mu).total_density()
+            dens = lambda dmu : scheme.g_local(sigma_c_iw, dmu).total_density()
             if 'density' in p.keys():
                 if p['density']:
-                    mu, density0 = dichotomy(function = dens, x_init = mu, 
-                                             y_value = p['density'], 
-                                             precision_on_y = 0.001, delta_x = 0.5,
-                                             max_loops = 1000, x_name = 'mu', 
-                                             y_name = 'density', verbosity = 0)
-            if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('mu: %s'%mu)
-            if mu == None: mu = p['u'] * .5
+                    dmu, density0 = dichotomy(function = dens, x_init = dmu, 
+                                              y_value = p['density'], 
+                                              precision_on_y = 0.001, delta_x = 0.5,
+                                              max_loops = 1000, x_name = 'dmu', 
+                                              y_name = 'density', verbosity = 0)
+                    if dmu == None: dmu = 0
+            if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('dmu: %s'%dmu)
 
             # Inverse FT
-            g_c_iw << scheme.g_local(sigma_c_iw, 0)
+            g_c_iw << scheme.g_local(sigma_c_iw, dmu)
             if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(g_c_iw, p['archive'][0:-3] + 'Gchecksym' + str(loop_nr) + '.png')
 
             # Use transformation to (block-)diagonalize G: G_sym = U.G.U_dag
@@ -227,7 +229,7 @@ class CDmft(object):
             if 'impose_paramagnetism' in p.keys(): 
                 if p['impose_paramagnetism']: g_c_iw << impose_paramagnetism(g_c_iw)
             if 'site_symmetries' in p.keys(): g_c_iw << impose_site_symmetries(g_c_iw, p['site_symmetries'])
-            if 'mix_coeff' in p.keys(): g_c_iw, mu = mix(g_c_iw, mu, p['mix_coeff'])
+            if 'mix_coeff' in p.keys(): g_c_iw, dmu = mix(g_c_iw, dmu, p['mix_coeff'])
             g_c_iw << clip_g(g_c_iw, p['clipping_threshold'])
             g_sym_iw << g_sym(g_c_iw, p['symmetry_transformation'], sym_ind)
             for s, b in sigma_sym_iw: b << inverse(g_0_iw[s]) - inverse(g_sym_iw[s]) - energy_loc_sym(energy_loc, p['symmetry_transformation'], sym_ind)[s]
@@ -263,6 +265,7 @@ class CDmft(object):
                 a_l['Sigma_c_iw'] = sigma_c_iw
                 a_l['Sigma_c_iw_raw'] = sigma_c_iw_raw
                 a_l['mu'] = mu
+                a_l['dmu'] = dmu
                 a_l['density'] = density
                 a_l['sign'] = imp_sol.average_sign
                 a_l['spectrum'] = get_spectrum(imp_sol)
@@ -281,7 +284,7 @@ class CDmft(object):
                 else:
                     a_r['n_dmft_loops'] = 1
                 a['parameters']['Sigma_c_iw'] = sigma_c_iw
-                a['parameters']['mu'] = mu
+                a['parameters']['dmu'] = dmu
                 del a
                 mpi.report('')
 
@@ -385,6 +388,7 @@ class CDmft(object):
         functions = ['G_c_iw', 'Sigma_c_iw', 'mu', 'density']
         a = HDFArchive(self.parameters['archive'], 'r')
         if 'sign' in a['Results'][str(self.last_loop())]: functions.append('sign')
+        if 'dmu' in a['Results'][str(self.last_loop())]: functions.append('dmu')
         del a
         for f in functions:
             plot_of_loops_from_archive(p['archive'], f, marker = '+')
