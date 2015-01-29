@@ -167,6 +167,7 @@ class CDmft(object):
                                              max_loops = 1000, x_name = 'mu', 
                                              y_name = 'density', verbosity = 0)
             if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('mu: %s'%mu)
+            if mu == None: mu = p['u'] * .5
 
             # Inverse FT
             g_c_iw << scheme.g_local(sigma_c_iw, 0)
