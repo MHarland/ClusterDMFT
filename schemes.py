@@ -135,6 +135,7 @@ class PCDMFT_Kot(object):
         self.clustersite_pos = clustersite_pos
         self.bz_weights = k_sum.BZ_weights
         self.eps_bz = k_sum.Hopping
+        self.eps_rbz = self.eps_bz # it really is bz
         self.lattice = SigmaPeriodization(lattice_vectors, lattice_basis, hopping, n_kpts, clustersite_pos)
 
     def g_local(self, sigma, mu):
