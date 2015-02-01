@@ -73,6 +73,9 @@ class kag_tri(Superlattice):
     def get_symmetry_transformation(self):
         return [[1/sqrt(3), 1/sqrt(3), 1/sqrt(3)], [-2/sqrt(6), 1/sqrt(6), 1/sqrt(6)], [0, 1/sqrt(2), -1/sqrt(2)]]
 
+    def get_symmetry_indices(self):
+        return [['0-up',[0]],['1-up',[0]],['2-up',[0]],['0-down',[0]],['1-down',[0]],['2-down',[0]]]
+
 class sq_dim(Superlattice):
     def __init__(self, t = -1.):
         Superlattice.__init__(self,

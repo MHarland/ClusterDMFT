@@ -146,7 +146,10 @@ class CDmft(object):
 
         # Checkout G_loc for blocks after symmetry transformation and initialize solver
         if not ('symmetry_transformation' in p.keys()): p['symmetry_transformation'] = identity(n_sites)
-        sym_ind = sym_indices(scheme.g_local(sigma_c_iw, dmu), p['symmetry_transformation'])
+        if 'gf_sym_struct' in p.keys():
+            sym_ind = p['gf_sym_struct']
+        else:
+            sym_ind = sym_indices(scheme.g_local(sigma_c_iw, dmu), p['symmetry_transformation'])
         imp_sol = Solver(beta = p['beta'], gf_struct = dict(sym_ind), n_tau = p['n_tau'], n_iw = p['n_iw'], n_l = p['n_legendre'])
         if p['verbosity'] > 0: mpi.report('Indices for calculation are:', sym_ind)
         delta_sym_tau = imp_sol.Delta_tau.copy()
