@@ -76,9 +76,7 @@ def _cumulant_lat(sigma, bz_grid, site_pos, mu):
                 r_i = array(site_pos[i])
                 for j in range(n_sites):
                     r_j = array(site_pos[j])
-                    _temp = m_lat[k_ind][s].copy()
-                    if i == j: m_lat[k_ind][s][0, 0] = _temp[0, 0] + m[s][i, j] * exp(complex(0, 2 * pi * dot(k, (r_i - r_j)))) /float(n_sites)
-    del _temp
+                    m_lat[k_ind][s][0, 0] += m[s][i, j] * exp(complex(0, 2 * pi * dot(k, (r_i - r_j)))) /float(n_sites)
     """
     m_lat_loc = GfImFreq(indices = [0], mesh = sigma.mesh) # 
     for k_ind in range(n_kpts):
