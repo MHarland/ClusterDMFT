@@ -22,9 +22,13 @@ class l_3s(Superlattice):
 class l_4s(Superlattice):
     def __init__(self, t = -1.):
         Superlattice.__init__(self,
-                              [[4, 0, 0], [0, 200, 0]], 
+                              [[4, 0, 0], [0, 4, 0]], 
                               [[-3 / 8., 0], [-1 / 8., 0], [1 / 8., 0], [3 / 8., 0]], 
                               {(.25, 0) : t, (-.25, 0) : t})
+
+    def get_C2_transformation(self):
+        n = 1/sqrt(2)
+        return [[n,0,0,n],[0,n,n,0],[0,-n,n,0],[-n,0,0,n]]
 
 class sq_sq(Superlattice):
     def __init__(self, t = -1.):
