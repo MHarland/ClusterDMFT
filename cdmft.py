@@ -172,6 +172,8 @@ class CDmft(object):
                                               max_loops = 1000, x_name = 'dmu', 
                                               y_name = 'density', verbosity = 0)
                     if dmu == None: dmu = 0
+                    if dmu > mu: dmu = mu
+                    if dmu < -mu: dmu = -mu
             if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('dmu: %s'%dmu)
 
             # Inverse FT
