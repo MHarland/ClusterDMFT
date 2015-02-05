@@ -1,5 +1,5 @@
 from matplotlib import pyplot as plt, rc
-from numpy import empty
+from numpy import empty, log
 from pytriqs.plot.mpl_interface import oplot
 from pytriqs.archive import HDFArchive
 
@@ -160,3 +160,12 @@ def checktransf_plot(g, fname, **kwargs):
     plt.tight_layout()
     plt.savefig(fname)
     plt.close()
+
+def plot_ln_abs(gl, *args, **kwargs):
+    g = gl.copy()
+    for s, b in gl:
+        for i in range(len(b.data[0, :, :])):
+            for j in range(len(b.data[0, :, :])):
+                for n in range(len(b.data[:, 0, 0])):
+                    g[s].data[n, i, j] = log(abs(b.data[n, i, j]))
+    oplot(g, *args, **kwargs)
