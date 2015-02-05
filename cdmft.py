@@ -15,7 +15,7 @@ from .archive import dict_to_archive, archive_to_dict, archive_content, load_sym
 from .schemes import Cellular_DMFT, PCDMFT_Li, MPCDMFT, PCDMFT_Kot
 from .lattice.superlatticetools import dispersion as energy_dispersion
 from .periodization import Periodization
-from .plot import plot_from_archive, plot_of_loops_from_archive, checksym_plot, checktransf_plot
+from .plot import plot_from_archive, plot_of_loops_from_archive, checksym_plot, checktransf_plot, plot_ln_abs
 from .post_process_g import clip_g, tail_start, impose_site_symmetries, impose_paramagnetism, MixUpdate
 from .spectrum import get_spectrum
 from .transformation.gf import g_sym, g_c, sym_indices
@@ -331,8 +331,8 @@ class CDmft(object):
 
         a = HDFArchive(p['archive'], 'r')
         if a['Results'][str(self.last_loop())].is_group('G_sym_l'):
-            oplot(self.load('G_sym_l'))
-            plt.gca().set_ylabel('$G_{sym}(l)$')
+            plot_ln_abs(self.load('G_sym_l'))
+            plt.gca().set_ylabel('$\\mathrm{ln}\\,\\mathrm{abs}\\,G_{sym}(l)$')
             pp.savefig()
             plt.close()
         del a
