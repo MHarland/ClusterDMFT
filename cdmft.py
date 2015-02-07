@@ -172,8 +172,8 @@ class CDmft(object):
                                               max_loops = 1000, x_name = 'dmu', 
                                               y_name = 'density', verbosity = 0)
                     if dmu == None: dmu = 0
-                    if dmu > mu: dmu = mu
-                    if dmu < -mu: dmu = -mu
+                    if dmu > p['u']: dmu = p['u']
+                    if dmu < -p['u']: dmu = -p['u']
             if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('dmu: %s'%dmu)
 
             # Inverse FT
@@ -303,7 +303,7 @@ class CDmft(object):
         p = self.parameters
         n_sites = len(p['clustersite_pos'])
         sites = range(n_sites)
-        prange = (0, 100)
+        prange = (0, 60)
 
         if 'name' in p.keys():
             filename = p['name'] + '.pdf'
