@@ -108,8 +108,6 @@ class CDmft(object):
         lattice_dim = len(p['hop'].keys()[0])
         if not 'v' in p.keys(): p['v'] = 0
 
-        if mpi.is_master_node(): duration = time()
-
         # checks
         for key, val in self.parameters['hop'].items():
             assert type(val) == ndarray, 'The hoppingtensor has to be a dict with tuples as keys and arrays as values'
@@ -161,6 +159,7 @@ class CDmft(object):
         # DMFT loop
         for loop_nr in range(self.next_loop(), self.next_loop() + n_dmft_loops):       
             if mpi.is_master_node(): mpi.report('DMFT-loop nr. %s'%loop_nr)
+            if mpi.is_master_node(): duration = time()
 
             # Estimate mu for a given filling or vice versa
             dens = lambda dmu : scheme.g_local(sigma_c_iw, dmu).total_density()
