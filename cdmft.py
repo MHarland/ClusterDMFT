@@ -165,6 +165,7 @@ class CDmft(object):
             dens = lambda dmu : scheme.g_local(sigma_c_iw, dmu).total_density()
             if 'density' in p.keys():
                 if p['density']:
+                    dmu_old = dmu
                     dmu, density0 = dichotomy(function = dens, x_init = dmu, 
                                               y_value = p['density'], 
                                               precision_on_y = 0.001, delta_x = 0.5,
@@ -173,6 +174,9 @@ class CDmft(object):
                     if dmu == None: dmu = 0
                     if dmu > p['u']: dmu = p['u']
                     if dmu < -p['u']: dmu = -p['u']
+                    if 'dmu_step_lim' in p.keys():
+                        if dmu - dmu_old > p['dmu_step_lim']: dmu = p['dmu_step_lim']
+                        if dmu - dmu_old < -p['dmu_step_lim']: dmu = -p['dmu_step_lim']
             if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('dmu: %s'%dmu)
 
             # Inverse FT
