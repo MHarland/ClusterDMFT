@@ -171,12 +171,13 @@ class CDmft(object):
                                               precision_on_y = 0.001, delta_x = 0.5,
                                               max_loops = 1000, x_name = 'dmu', 
                                               y_name = 'density', verbosity = 0)
-                    if dmu == None: dmu = 0
-                    if dmu > p['u']: dmu = p['u']
-                    if dmu < -p['u']: dmu = -p['u']
+                    if dmu == None: dmu = dmu_old
+                    if 'dmu_lim' in p.keys():
+                        if dmu > p['dmu_lim']: dmu = p['dmu_lim']
+                        if dmu < -p['dmu_lim']: dmu = -p['dmu_lim']
                     if 'dmu_step_lim' in p.keys():
-                        if dmu - dmu_old > p['dmu_step_lim']: dmu += p['dmu_step_lim']
-                        if dmu - dmu_old < -p['dmu_step_lim']: dmu -= p['dmu_step_lim']
+                        if dmu - dmu_old > p['dmu_step_lim']: dmu = dmu_old + p['dmu_step_lim']
+                        if dmu - dmu_old < -p['dmu_step_lim']: dmu = dmu_old - p['dmu_step_lim']
             if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('dmu: %s'%dmu)
 
             # Inverse FT
