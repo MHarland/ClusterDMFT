@@ -47,7 +47,7 @@ def plot_of_loops_from_archive(archive, function, matsubara_freqs = [0], spins =
         ax.plot(density, label = '<sign>', **kwargs)
         ax.set_ylim(-1.1, 1.1)
 
-    ax.legend()
+    ax.legend(loc = 2)
     plt.xlabel('DMFT loop')
     #plt.ylabel('f')
     del arch
