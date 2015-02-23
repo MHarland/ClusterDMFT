@@ -16,8 +16,8 @@ for arch in sys.argv[5:len(sys.argv)]:
     x = CDmft(archive = arch)
     g = x.load('G_c_iw')
     for n in range(n_start, n_stop, n_step):
-        g_w = pade(g, pade_n_omega_n = n, pade_eta = 10**-10, dos_n_points = 1200, dos_window = (-max_w, max_w))
-        oplot(g_w, RI = 'S', name = str(n), color = cm.jet((n - n_start) /float(n_stop - n_start - n_step)))
+        g_w = pade(g, pade_n_omega_n = n, pade_eta = 10**-2, dos_n_points = 1200, dos_window = (-max_w, max_w), clip_threshold = 0)
+        oplot(g_w, RI = 'S', name = str(n), color = cm.jet((n - n_start) /float(n_stop - n_start)))
     filename = 'dos_' + arch[0:-3] + '_' + str(n_start) + str(n_stop) + str(n_step) + '.png'
     plt.savefig(filename)
     plt.close()

@@ -14,8 +14,9 @@ n_graphs = len(sys.argv) -2
 for n, arch in enumerate(sys.argv[3:len(sys.argv)]):
     x = CDmft(archive = arch)
     g = x.load('G_c_iw')
-    g_w = pade(g, pade_n_omega_n = freq, pade_eta = 10**-10, dos_n_points = 1200, dos_window = (-max_w, max_w))
-    oplot(g_w, RI = 'S', name = arch[0:-3], color = cm.jet(n /float(n_graphs)))
+    g_w = pade(g, pade_n_omega_n = freq, pade_eta = 10**-2, dos_n_points = 1200, dos_window = (-max_w, max_w), clip_threshold = 0)
+    oplot(g_w, RI = 'S', name = arch[0:-3], color = cm.jet(n /float(n_graphs - 1)))
+plt.gca().set_ylabel('$A(\omega)$')
 plt.savefig('dos'+str(freq)+'.png', dpi = 300)
 plt.close()
 print 'dos'+str(freq)+'.png ready'
