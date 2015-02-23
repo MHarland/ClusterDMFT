@@ -4,9 +4,9 @@ from pytriqs.gf.local.descriptor_base import Const
 from pytriqs.archive import HDFArchive
 from pytriqs.plot.mpl_interface import oplot
 import pytriqs.utility.mpi as mpi
-from numpy import array, exp, dot, sqrt, pi, log, linspace
+from numpy import array, exp, dot, sqrt, pi, log, linspace, empty
 from numpy.linalg import norm
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, cm
 from mpl_toolkits.mplot3d import Axes3D
 
 from ..lattice.superlatticetools import dispersion as energy_dispersion, _init_k_sum, reciprocal_latticevectors
@@ -40,18 +40,12 @@ class PeriodizationBase(object):
             self.lattice_vectors = lattice_vectors
             self.superlattice_basis = superlattice_basis
             sumk = _init_k_sum(lattice_vectors, lattice_basis, hopping, n_kpts)
-            #self.bz_grid = sumk.BZ_Points
-            # TODO check gridfix for other lattice structures than squarelattice
-            shift = sumk.BZ_Points[1, 0] - sumk.BZ_Points[0, 0]
+            self.bz_grid = sumk.BZ_Points
             d = len(sumk.BZ_Points[0, :])
             self.d = d
-            #self.bz_grid = array([(k - array([shift] * d)) for k in sumk.BZ_Points]) # only valid for 2x2cluster in squarelattice!
-            self.bz_grid = array([(k - shift) for k in sumk.BZ_Points])
-            self.bz_grid = array([k for k in sumk.BZ_Points]) # remove shift
             self.bz_weights = sumk.BZ_weights
             self.reciprocal_lattice_vectors = reciprocal_latticevectors(lattice_vectors)
             self.eps = sumk.Hopping
-            #self.sumk = sumk
 
     def get_sigma_lat(self):
         return self.sigma_lat
@@ -158,36 +152,47 @@ class PeriodizationBase(object):
             kwargs.update({'name' : 'LDOS'})
         oplot(_tr_g_lat_pade([self.g_lat_loc], **p_dos)[0], RI = 'S', **kwargs)
 
-    def plot_hist2d_energy_dispersion(self, band = 0, **kwargs):
+    def plot2d_energy_dispersion(self, band = 0, **kwargs):
         """
         Written only for 2d-lattice data
         """
-        #plot_grid = list()
-        #for k in self.bz_grid:
-        #    plot_grid.append(dot(self.reciprocal_lattice_vectors, k))
-        #plot_grid = array(plot_grid)
-        #k1 = self.reciprocal_lattice_vectors[0, :]
-        #k2 = self.reciprocal_lattice_vectors[1, :]
-        #nbins = int(self.n_kpts * (abs(dot(k1, k2)) + norm(k1)) / norm(k1))
-        eps = [self.eps[k, band, band].real for k in range(len(self.eps))]
-        plt.hist2d(self.bz_grid[:, 0], self.bz_grid[:, 1], bins = self.n_kpts, weights = eps, **kwargs)
-        plt.colorbar()
-        plt.xlabel('$k_x$')
-        plt.ylabel('$k_y$')
-        plt.title('$\epsilon_' + str(band) + '(k)$')
+        assert len(self.bz_grid[0, :]) == 2, 'Data is not from a 2d calculation'
+        nk = int(sqrt(len(self.bz_grid)))
+        k_mesh1d = self.bz_grid[0:nk, 0]
+        f_pdat = empty([nk, nk])
+        k_index = 0
+        for i in range(nk):
+            for j in range(nk):
+                f_pdat[j, i] = self.eps[k_index, band, band].real
+                k_index += 1
+        fig, ax = plt.subplots()
+        im = ax.imshow(f_pdat, cmap = cm.jet, extent = [-0.5, 0.5, -0.5, 0.5], interpolation = 'gaussian', **kwargs)
+        fig.colorbar(im, ax = ax)
+        ax.set_xticks([-.5,-.25,0,.25,.5])
+        ax.set_yticks([-.5,-.25,0,.25,.5])
+        ax.set_xlabel('$k_x$')
+        ax.set_ylabel('$k_y$')
+        ax.set_title('$\epsilon_' + str(band) + '(k)$')
 
-    def plot_hist2d_dos_k(self, ind_freq = 'ind_zerofreq', logarithmic = False, **kwargs):
+    def plot2d_dos_k(self, ind_freq = 'ind_zerofreq', **kwargs):
         if ind_freq == 'ind_zerofreq':
             ind_freq = int(len(self.tr_g_lat_pade[0].data[:, 0, 0]) * .5)
-        if logarithmic:
-            plt.hist2d(self.bz_grid[:, 0], self.bz_grid[:, 1], bins = self.n_kpts, weights = [log(-1 * self.tr_g_lat_pade[k].data[ind_freq, 0, 0].imag / pi) for k in range(len(self.tr_g_lat_pade))], **kwargs)
-        else:
-            #plt.hist2d(self.bz_grid[:, 0], self.bz_grid[:, 1], bins = self.n_kpts, weights = [(+1 * self.tr_g_lat_pade[k].data[ind_freq, 0, 0].imag / pi) for k in range(len(self.tr_g_lat_pade))], cmin = -0.1, vmin = 0, vmax = 1, **kwargs)
-            plt.hist2d(self.bz_grid[:, 0], self.bz_grid[:, 1], bins = self.n_kpts, weights = [(-1 * self.tr_g_lat_pade[k].data[ind_freq, 0, 0].imag / pi) for k in range(len(self.tr_g_lat_pade))], **kwargs)
-        plt.colorbar()
-        plt.xlabel('$k_x$')
-        plt.ylabel('$k_y$')
-        plt.title('$A(k, \omega)$')
+        nk = int(sqrt(len(self.bz_grid)))
+        k_mesh1d = self.bz_grid[0:nk, 0]
+        a = empty([nk, nk])
+        k_index = 0
+        for i in range(nk):
+            for j in range(nk):
+                a[j, i] = -1 * self.tr_g_lat_pade[k_index].data[ind_freq, 0, 0].imag / pi
+                k_index += 1
+        fig, ax = plt.subplots()
+        im = ax.imshow(a, vmin = 0, vmax = 1, cmap = cm.summer, extent = [-0.5, 0.5, -0.5, 0.5], interpolation = 'gaussian')
+        fig.colorbar(im, ax = ax)
+        ax.set_xticks([-.5,-.25,0,.25,.5])
+        ax.set_yticks([-.5,-.25,0,.25,.5])
+        ax.set_xlabel('$k_x$')
+        ax.set_ylabel('$k_y$')
+        ax.set_title('$A(k, \omega)$')
 
     def plot_dos_k_w(self, path):
         f = self.get_tr_g_lat_pade()
@@ -200,21 +205,19 @@ class PeriodizationBase(object):
             for p in path:
                 if all(self.bz_grid[k_ind] == _k(self.bz_grid, p)):
                     k_ticks.append([nr_k, p])
-            x = range(n_omega)
+            x = [w.real for w in f[0].mesh]
             y = [nr_k] * n_omega
             z = -f[k_ind].data[:, 0, 0].imag / pi
             ax.plot(x, y, z, label = 'test', c = 'b')
 
         ax.set_xlabel('$\omega$')
-        ax.set_xticks([int(n_omega * .5)])
-        ax.set_xticklabels([0])
-        ax.set_xlim([0, n_omega])
         ax.set_ylabel('$k$')
         ax.set_yticks([k_ticks[i][0] for i in range(len(k_ticks))])
         ax.set_yticklabels([k_ticks[i][1] for i in range(len(k_ticks))])
         ax.set_zlabel('$A(k, \omega)$')
-        #ax.set_zlim([0, 4])
+        ax.set_zlim([0, None])
         ax.view_init(elev = 60, azim = -90)
+        plt.tight_layout()
 
     def plot(self, function_name, k, block, index, *args, **kwargs):
         """
@@ -228,25 +231,25 @@ class PeriodizationBase(object):
 
     def plot2d_k(self, function_name, matsubara_freq = 0, spin = 'up', band = 0, **kwargs):
         """
-        makes a 2D histogramplot of function_name: 'M_lat', 'Sigma_lat', 'G_lat' or 'Tr_G_lat' over the k vectors of the 1BZ
+        makes a 2D plot of function_name: 'M_lat', 'Sigma_lat', 'G_lat' or 'Tr_G_lat' over the k vectors of the 1BZ
         """
         assert function_name in ['M_lat', 'Sigma_lat', 'G_lat', 'Tr_G_lat'], 'invalid_function_name'
         if function_name == 'M_lat': 
             pname = '$M_{lat,' + str(band) + '}$_' + str(spin)
             function = self.m_lat
-            pplot_hist2d_k(function, spin, matsubara_freq, band, self.bz_grid, self.n_kpts, **kwargs)
+            pplot2d_k(function, spin, matsubara_freq, band, self.bz_grid, self.n_kpts, **kwargs)
         if function_name == 'Sigma_lat': 
             pname = '$\Sigma_{lat,' + str(band) + '}$_' + str(spin)
             function = self.sigma_lat
-            pplot_hist2d_k(function, spin, matsubara_freq, band, self.bz_grid, self.n_kpts, **kwargs)
+            pplot2d_k(function, spin, matsubara_freq, band, self.bz_grid, self.n_kpts, **kwargs)
         if function_name == 'G_lat':
             pname = '$G_{lat,' + str(band) + '}$_' + str(spin)
             function = self.g_lat
-            pplot_hist2d_k(function, spin, matsubara_freq, band, self.bz_grid, self.n_kpts, **kwargs)
+            pplot2d_k(function, spin, matsubara_freq, band, self.bz_grid, self.n_kpts, **kwargs)
         if function_name == 'Tr_G_lat': 
             pname = 'Tr$G_{lat}$'
             function = self.tr_g_lat
-            pplot_hist2d_k_singleG(function, matsubara_freq, 0, self.bz_grid, self.n_kpts, **kwargs)
+            pplot2d_k_singleG(function, matsubara_freq, 0, self.bz_grid, self.n_kpts, **kwargs)
         if 'imaginary_part' in kwargs:
             if kwargs['imaginary_part'] == False:
                 pname = 'Re' + pname
@@ -259,7 +262,7 @@ class PeriodizationBase(object):
         plt.ylabel('$k_y$')
         plt.title(pname + '$(k, i\omega_' + str(matsubara_freq) + ')$')
 
-def _tr_g_lat_pade(g_lat, pade_n_omega_n = 101, pade_eta = 10**(-2), dos_n_points = 1200, dos_window = (-10, 10), clip_threshold = 0.01):
+def _tr_g_lat_pade(g_lat, pade_n_omega_n = 301, pade_eta = 10**(-2), dos_n_points = 1200, dos_window = (-10, 10), clip_threshold = 0.01):
     tr_g_lat_pade = list()
     for gk in g_lat:
         tr_spin_g = GfImFreq(indices = range(len(gk['up'].data[0, :, :])), mesh = gk.mesh)
@@ -337,26 +340,54 @@ def pplot(f, k, block, index, bz_grid, *args, **kwargs):
         name = kwargs.pop('name')
     else:
         name = str(index[0]) + '_' + str(block) + '_' + str(k)
-    oplot(f[_k_ind(bz_grid, k)][block][index], name = name, *args, **kwargs)
+    for m in [('R', 'Re'), ('I', 'Im')]:
+        name2 = m[1] + name
+        oplot(f[_k_ind(bz_grid, k)][block][index], name = name2, RI = m[0], *args, **kwargs)
 
-def pplot_hist2d_k(f, spin, matsubara_freq, band, bz_grid, n_kpts, imaginary_part = True, *args, **kwargs):
+def pplot2d_k(f, spin, matsubara_freq, band, bz_grid, n_kpts, imaginary_part = True, *args, **kwargs):
     """
-    f is assumed to be a list of BlockGf dependent on the k-vectors in k. kwargs go to hist2d. Written for 2d.
+    f is assumed to be a list of BlockGf dependent on the k-vectors in k. kwargs go to imshow. Written for 2d.
     """
     assert len(bz_grid[0, :]) == 2, 'Data is not from a 2d calculation'
-    if imaginary_part:
-        plt.hist2d(bz_grid[:, 0], bz_grid[:, 1], bins = n_kpts, weights = [f[k][spin].data[matsubara_freq, band, band].imag for k in range(len(f))], *args, **kwargs)
-    else:
-      plt.hist2d(bz_grid[:, 0], bz_grid[:, 1], bins = n_kpts, weights = [f[k][spin].data[matsubara_freq, band, band].real for k in range(len(f))], *args, **kwargs)
-    plt.colorbar()
+    nk = int(sqrt(len(bz_grid)))
+    k_mesh1d = bz_grid[0:nk, 0]
+    f_pdat = empty([nk, nk])
+    k_index = 0
+    for i in range(nk):
+        for j in range(nk):
+            if imaginary_part:
+                f_pdat[j, i] = f[k_index][spin].data[matsubara_freq, band, band].imag
+            else:
+                f_pdat[j, i] = f[k_index][spin].data[matsubara_freq, band, band].real
+            k_index += 1
+    fig, ax = plt.subplots()
+    im = ax.imshow(f_pdat, cmap = cm.jet, extent = [-0.5, 0.5, -0.5, 0.5], interpolation = 'gaussian', **kwargs)
+    fig.colorbar(im, ax = ax)
+    ax.set_xticks([-.5,-.25,0,.25,.5])
+    ax.set_yticks([-.5,-.25,0,.25,.5])
+    ax.set_xlabel('$k_x$')
+    ax.set_ylabel('$k_y$')
 
-def pplot_hist2d_k_singleG(f, matsubara_freq, band, bz_grid, n_kpts, imaginary_part = True, *args, **kwargs):
+def pplot2d_k_singleG(f, matsubara_freq, band, bz_grid, n_kpts, imaginary_part = True, *args, **kwargs):
     """
-    f is assumed to be a list of GfImFreq dependent on the k-vectors in k. kwargs go to hist2d. Written for 2d.
+    f is assumed to be a list of GfImFreq dependent on the k-vectors in k. kwargs go to imshow. Written for 2d.
     """
     assert len(bz_grid[0, :]) == 2, 'Data is not from a 2d calculation'
-    if imaginary_part:
-        plt.hist2d(bz_grid[:, 0], bz_grid[:, 1], bins = n_kpts, weights = [f[k].data[matsubara_freq, band, band].imag for k in range(len(f))], *args, **kwargs)
-    else:
-      plt.hist2d(bz_grid[:, 0], bz_grid[:, 1], bins = n_kpts, weights = [f[k].data[matsubara_freq, band, band].real for k in range(len(f))], *args, **kwargs)
-    plt.colorbar()
+    nk = int(sqrt(len(bz_grid)))
+    k_mesh1d = bz_grid[0:nk, 0]
+    f_pdat = empty([nk, nk])
+    k_index = 0
+    for i in range(nk):
+        for j in range(nk):
+            if imaginary_part:
+                f_pdat[j, i] = f[k_index].data[matsubara_freq, band, band].imag
+            else:
+                f_pdat[j, i] = f[k_index].data[matsubara_freq, band, band].real
+            k_index += 1
+    fig, ax = plt.subplots()
+    im = ax.imshow(f_pdat, cmap = cm.jet, extent = [-0.5, 0.5, -0.5, 0.5], interpolation = 'gaussian', **kwargs)
+    fig.colorbar(im, ax = ax)
+    ax.set_xticks([-.5,-.25,0,.25,.5])
+    ax.set_yticks([-.5,-.25,0,.25,.5])
+    ax.set_xlabel('$k_x$')
+    ax.set_ylabel('$k_y$')
