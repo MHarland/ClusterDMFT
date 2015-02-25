@@ -186,7 +186,7 @@ class PeriodizationBase(object):
                 a[j, i] = -1 * self.tr_g_lat_pade[k_index].data[ind_freq, 0, 0].imag / pi
                 k_index += 1
         fig, ax = plt.subplots()
-        im = ax.imshow(a, vmin = 0, vmax = 1, cmap = cm.summer, extent = [-0.5, 0.5, -0.5, 0.5], interpolation = 'gaussian')
+        im = ax.imshow(a, vmin = 0, vmax = 1, cmap = cm.copper, extent = [-0.5, 0.5, -0.5, 0.5], interpolation = 'gaussian')
         fig.colorbar(im, ax = ax)
         ax.set_xticks([-.5,-.25,0,.25,.5])
         ax.set_yticks([-.5,-.25,0,.25,.5])
@@ -218,6 +218,35 @@ class PeriodizationBase(object):
         ax.set_zlim([0, None])
         ax.view_init(elev = 60, azim = -90)
         plt.tight_layout()
+
+    def color_dos_k_w(self, path):
+        f = self.get_tr_g_lat_pade()
+        n_omega = len(f[0].data[:, 0, 0])
+        k_ticks = list()
+        fig, ax = plt.subplots()
+        z = list()
+        x = list()
+
+        for nr_k, k_ind in enumerate(_k_ind_path(self.bz_grid, path)):
+            for p in path:
+                if all(self.bz_grid[k_ind] == _k(self.bz_grid, p)):
+                    k_ticks.append([nr_k, p])
+            x.append(self.bz_grid[k_ind])
+            z.append(list())
+            for n, wn in enumerate(f[0].mesh):
+                z[-1].append(-f[k_ind].data[n, 0, 0].imag / pi)
+        x = array(x)
+        y = array([w.real for w in f[0].mesh])
+        z = array(z)
+
+        im = ax.imshow(z.T, cmap = cm.copper, interpolation = 'gaussian', extent = [0, len(x), y[0], y[-1]], vmin = 0, vmax = min(10, z.max()))
+        ax.set_ylabel('$\omega$')
+        ax.set_xlabel('$k$')
+        ax.set_xticks([k_ticks[i][0] for i in range(len(k_ticks))])
+        ax.set_xticklabels([k_ticks[i][1] for i in range(len(k_ticks))])
+        ax.set_title('$A(k,\,\omega)$')
+        fig.colorbar(im, ax = ax)
+        ax.set_aspect(abs(len(x)/(y[-1] - y[0])))
 
     def plot(self, function_name, k, block, index, *args, **kwargs):
         """
