@@ -407,32 +407,46 @@ class CDmft(object):
         a = HDFArchive(self.parameters['archive'], 'r')
         if a.is_group('Periodization'):
             lat = Periodization(archive = self.parameters['archive'])
-            oplot(lat.get_g_lat_loc()['up'], '-+', x_window = prange)
+            if lat.d == 2: 
+                path = [[0, 0], [.5, 0], [.5, .5], [0, 0]]
+                path_labels = ['$\Gamma$', 'X', 'M', '$\Gamma$']
+            if lat.d == 3: 
+                path = [[0,0,0],[.5,0,.5],[.5,.25,.75],[3/8.,3/8.,.75],[.5,.5,.5],[0,0,0]]
+                path_labels = ['$\Gamma$', 'X', 'W', 'K', 'L', '$\Gamma$']
+            n_orbs = len(lat.hopping.values()[0])
+            plt.gca().set_color_cycle([plt.cm.jet(i/float(n_orbs**2 - 1)) for i in range(n_orbs**2)])
+            oplot(lat.get_g_lat_loc()['up'], '-+', x_window = prange, RI = 'I')
             pp.savefig()
             plt.close()
-            oplot(lat.get_sigma_lat_loc()['up'], '-+', x_window = prange)
+            plt.gca().set_color_cycle([plt.cm.jet(i/float(n_orbs**2 - 1)) for i in range(n_orbs**2)])
+            oplot(lat.get_g_lat_loc()['up'], '-+', x_window = prange, RI = 'R')
+            pp.savefig()
+            plt.close()
+            plt.gca().set_color_cycle([plt.cm.jet(i/float(n_orbs**2 - 1)) for i in range(n_orbs**2)])
+            oplot(lat.get_sigma_lat_loc()['up'], '-+', x_window = prange, RI = 'I')
+            pp.savefig()
+            plt.close()
+            plt.gca().set_color_cycle([plt.cm.jet(i/float(n_orbs**2 - 1)) for i in range(n_orbs**2)])
+            oplot(lat.get_sigma_lat_loc()['up'], '-+', x_window = prange, RI = 'R')
             pp.savefig()
             plt.close()
             lat.plot_dos_loc()
             pp.savefig()
             plt.close()
-            lat.plot('G_lat', (0, 0), 'up', (0, 0), '-+', x_window = prange)
-            lat.plot('G_lat', (.5, 0), 'up', (0, 0), '-+', x_window = prange)
-            lat.plot('G_lat', (.25, .25), 'up', (0, 0), '-+', x_window = prange)
-            plt.gca().set_ylabel('$G_{lat}(i\omega_n)$')
-            pp.savefig()
-            plt.close()
-            lat.plot('Sigma_lat', (0, 0),'up',(0, 0), '-+', x_window = prange)
-            lat.plot('Sigma_lat', (.5, 0), 'up', (0, 0), '-+', x_window = prange)
-            lat.plot('Sigma_lat', (.25, .25), 'up', (0, 0), '-+', x_window = prange)
-            plt.gca().set_ylabel('$\Sigma_{lat}(i\omega_n)$')
-            pp.savefig()
-            plt.close()
-            path = [[0, 0], [.5, 0], [.5, .5], [0, 0]]
+            for p in path:
+                lat.plot('G_lat', p, 'up', (0, 0), '-+', x_window = prange)
+                plt.gca().set_ylabel('$G_{lat}(i\omega_n)$')
+                pp.savefig()
+                plt.close()
+            for p in path:
+                lat.plot('Sigma_lat', p,'up', (0, 0), '-+', x_window = prange)
+                plt.gca().set_ylabel('$\Sigma_{lat}(i\omega_n)$')
+                pp.savefig()
+                plt.close()
             lat.plot_dos_k_w(path)
             pp.savefig()
             plt.close()
-            lat.color_dos_k_w(path)
+            lat.color_dos_k_w(path, path_labels)
             pp.savefig()
             plt.close()
             if lat.d == 2:

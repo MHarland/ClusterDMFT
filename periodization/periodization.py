@@ -134,6 +134,10 @@ class PeriodizationBase(object):
                         self.__dict__[key].update(val)
                     else:
                         pass
+                elif type(val) == tuple:
+                    self.__dict__[key] = list()
+                    for v in val:
+                        self.__dict__[key].append(v)
                 else:
                     self.__dict__[key] = [0] * len(a_p[key])
                     for key2, val2 in val.items():
@@ -219,7 +223,7 @@ class PeriodizationBase(object):
         ax.view_init(elev = 60, azim = -90)
         plt.tight_layout()
 
-    def color_dos_k_w(self, path):
+    def color_dos_k_w(self, path, path_labels):
         f = self.get_tr_g_lat_pade()
         n_omega = len(f[0].data[:, 0, 0])
         k_ticks = list()
@@ -229,7 +233,7 @@ class PeriodizationBase(object):
 
         for nr_k, k_ind in enumerate(_k_ind_path(self.bz_grid, path)):
             for p in path:
-                if all(self.bz_grid[k_ind] == _k(self.bz_grid, p)):
+                if all(self.bz_grid[k_ind] == _k(self.bz_grid, p)) and not([nr_k, p] in k_ticks):
                     k_ticks.append([nr_k, p])
             x.append(self.bz_grid[k_ind])
             z.append(list())
@@ -242,8 +246,9 @@ class PeriodizationBase(object):
         im = ax.imshow(z.T, cmap = cm.copper, interpolation = 'gaussian', extent = [0, len(x), y[0], y[-1]], vmin = 0, vmax = min(10, z.max()))
         ax.set_ylabel('$\omega$')
         ax.set_xlabel('$k$')
+        print k_ticks
         ax.set_xticks([k_ticks[i][0] for i in range(len(k_ticks))])
-        ax.set_xticklabels([k_ticks[i][1] for i in range(len(k_ticks))])
+        ax.set_xticklabels(path_labels)
         ax.set_title('$A(k,\,\omega)$')
         fig.colorbar(im, ax = ax)
         ax.set_aspect(abs(len(x)/(y[-1] - y[0])))
