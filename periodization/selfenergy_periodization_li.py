@@ -48,5 +48,5 @@ def _g_lat(sigma_lat, mu, eps, bz_grid):
     g = [BlockGf(name_block_generator = [(s, sigma_lat[i][s]) for s in spins], name = '$G_{lat}$', make_copies = True) for i in range(n_kpts)]
     for s in spins:
         for k_ind in range(n_kpts):
-            g[k_ind][s] << inverse(iOmega_n + mu * identity(n_bands) - eps[k_ind, :, :] - sigma_lat[k_ind][s])
+            g[k_ind][s] << inverse(iOmega_n + mu - eps[k_ind, :, :] - sigma_lat[k_ind][s])
     return g
