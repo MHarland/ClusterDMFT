@@ -170,7 +170,7 @@ class PeriodizationBase(object):
                 f_pdat[j, i] = self.eps[k_index, band, band].real
                 k_index += 1
         fig, ax = plt.subplots()
-        im = ax.imshow(f_pdat, cmap = cm.jet, extent = [-0.5, 0.5, -0.5, 0.5], interpolation = 'gaussian', **kwargs)
+        im = ax.imshow(f_pdat, cmap = cm.jet, extent = [-0.5, 0.5, -0.5, 0.5], interpolation = 'gaussian', origin = 'lower', **kwargs)
         fig.colorbar(im, ax = ax)
         ax.set_xticks([-.5,-.25,0,.25,.5])
         ax.set_yticks([-.5,-.25,0,.25,.5])
