@@ -146,7 +146,7 @@ class PeriodizationBase(object):
                 self.__dict__[key] = val
 
     def plot_dos_loc(self, **kwargs):
-        k_dos = ['pade_n_omega_n', 'pade_eta', 'dos_n_points', 'dos_window']
+        k_dos = ['pade_n_omega_n', 'pade_eta', 'dos_n_points', 'dos_window', 'clip_threshold']
         p_dos = dict()
         for key, val in kwargs.items():
             if key in k_dos:
@@ -226,7 +226,7 @@ class PeriodizationBase(object):
     def color_dos_k_w(self, path, path_labels):
         x, y, z, k_ticks = g_k_to_imshow_data(self.get_tr_g_lat_pade(), path, self.bz_grid)
         fig, ax = plt.subplots()
-        im = ax.imshow(z.T, cmap = cm.copper, interpolation = 'gaussian', extent = [0, len(x), y[0], y[-1]], vmin = 0, vmax = min(2, z.max()))
+        im = ax.imshow(z.T, cmap = cm.copper, interpolation = 'gaussian', origin = 'lower', extent = [0, len(x), y[0], y[-1]], vmin = 0, vmax = min(2, z.max()))
         ax.set_ylabel('$\omega$')
         ax.set_xlabel('$k$')
         ax.set_xticks([k_ticks[i][0] for i in range(len(k_ticks))])
@@ -280,7 +280,7 @@ class PeriodizationBase(object):
         plt.ylabel('$k_y$')
         plt.title(pname + '$(k, i\omega_' + str(matsubara_freq) + ')$')
 
-def _tr_g_lat_pade(g_lat, pade_n_omega_n = 301, pade_eta = 10**(-2), dos_n_points = 1200, dos_window = (-10, 10), clip_threshold = 0.01):
+def _tr_g_lat_pade(g_lat, pade_n_omega_n = 40, pade_eta = 10**(-2), dos_n_points = 1200, dos_window = (-10, 10), clip_threshold = 0):
     tr_g_lat_pade = list()
     for gk in g_lat:
         tr_spin_g = GfImFreq(indices = range(len(gk['up'].data[0, :, :])), mesh = gk.mesh)

@@ -65,6 +65,20 @@ class pyrochlore(Superlattice):
         n = 1/sqrt(2)
         return [[n,-n,0,0],[n,n,0,0],[0,0,n,n],[0,0,-n,n]]
 
+class ss_pyrochlore(Superlattice):
+    def __init__(self, t = -1.):
+        Superlattice.__init__(self,
+                              [[1, 0, 0], 
+                               [.5, .5 * sqrt(3), 0], 
+                               [.5, 2 / sqrt(3), sqrt(2. / 3)]],
+                              [[0, 0, 0]], 
+                              {(1, 0, 0) : t, (-1, 0, 0) : t,
+                               (0, 1, 0) : t, (0, -1, 0) : t,
+                               (0, 0, 1) : t, (0, 0, -1) : t,
+                               (1, -1, 0) : t, (-1, 1, 0) : t,
+                               (1, 0, -1) : t, (-1, 0, 1) : t,
+                               (0, 1, -1) : t, (0, -1, 1) : t})
+
 class kag_tri(Superlattice):
     def __init__(self, t = -1.):
         Superlattice.__init__(self,

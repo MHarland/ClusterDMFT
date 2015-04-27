@@ -21,7 +21,7 @@ def h_loc_sym(u_int, mu, hop_loc, u, sym_indices, u_nn_int = False, verbosity = 
     udag = u.T.conjugate()
     u_c = CoulombTensor(u_int, dim)
     u_c_sym = u_c.transform(u)
-    if u_nn_int: 
+    if u_nn_int.any(): 
         u_nn_c = NNCoulombTensor(u_nn_int, dim)
         u_nn_c_sym = u_nn_c.transform(u)
     assert dot(u, udag).all() == identity(len(u)).all(), 'transformation not unitary'
@@ -45,7 +45,9 @@ def h_loc_sym(u_int, mu, hop_loc, u, sym_indices, u_nn_int = False, verbosity = 
 
     mu_matrix = - mu * identity(dim)
     h_loc = sum_list([sum_list([sum_list([_unblocked_c_dag_sym(s, i, sym_indices) * m_transform(mu_matrix, u, i, j) * _unblocked_c_sym(s, j, sym_indices) for j in sites]) for i in sites]) for s in spins])
+
     h_loc += sum_list([sum_list([sum_list([_unblocked_c_dag_sym(s, i, sym_indices) * m_transform(hop_loc, u, i, j) * _unblocked_c_sym(s, j, sym_indices) for j in sites]) for i in sites]) for s in spins])
+
     for s1 in spins:
         for s2 in spins:
             for i in sites:
@@ -53,7 +55,7 @@ def h_loc_sym(u_int, mu, hop_loc, u, sym_indices, u_nn_int = False, verbosity = 
                     for k in sites:
                         for l in sites:
                             h_loc += u_c_sym[i, j, k, l, s1, s2] * _unblocked_c_dag_sym(s1, i, sym_indices) * _unblocked_c_dag_sym(s2, j, sym_indices) *  _unblocked_c_sym(s2, l, sym_indices) * _unblocked_c_sym(s1, k, sym_indices)
-    if u_nn_int:
+    if u_nn_int.any():
         for s1 in spins:
             for s2 in spins:
                 for i in sites:

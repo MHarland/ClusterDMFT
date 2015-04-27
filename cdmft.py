@@ -1,3 +1,4 @@
+from itertools import izip
 from matplotlib import pyplot as plt, cm
 from matplotlib.backends.backend_pdf import PdfPages
 from numpy import ndarray, identity, array, zeros
@@ -111,7 +112,7 @@ class CDmft(object):
         # checks
         for key, val in self.parameters['hop'].items():
             assert type(val) == ndarray, 'The hoppingtensor has to be a dict with tuples as keys and arrays as values'
-        if not tuple([0] * lattice_dim) in p['hop'].keys(): p['hop'].update({tuple([0] * lattice_dim) : zeros([lattice_dim, lattice_dim])})
+        if not tuple([0] * lattice_dim) in p['hop'].keys(): p['hop'].update({tuple([0] * lattice_dim) : zeros([n_sites, n_sites])})
 
         # Initialize DMFT objects
         if self.parameters['scheme'] == 'cellular_dmft':
@@ -128,19 +129,27 @@ class CDmft(object):
             scheme = PCDMFT_Kot(p['lattice_vectors'], [[0, 0, 0]], p['hop_sublat'], p['n_kpts'], p['clustersite_pos_direct'])
         g_c_iw = BlockGf(name_block_generator = [(s, GfImFreq(indices = sites, beta = p['beta'], n_points = p['n_iw'])) for s in CDmft._spins], name = '$G_c$')
         sigma_c_iw = BlockGf(name_block_generator = [(s, GfImFreq(indices = sites, beta = p['beta'], n_points = p['n_iw'])) for s in CDmft._spins], name = '$\Sigma_c$')
-        dmu = 0
-        if 'Sigma_c_iw' in p.keys(): sigma_c_iw << p['Sigma_c_iw']
-        if 'dmu' in p.keys(): dmu = p['dmu']
-        if 'mu' in p.keys():
-            mu = p['mu']
+        g_0_c_iw = BlockGf(name_block_generator = [(s, GfImFreq(indices = sites, beta = p['beta'], n_points = p['n_iw'])) for s in CDmft._spins], name = '$\\mathcal{G}_{0,c}$')
+        if 'Sigma_c_iw' in p.keys(): 
+            sigma_c_iw << p['Sigma_c_iw']
+            del p['Sigma_c_iw']
         elif self.next_loop() > 0:
-            mu = self.load('mu')
+            sigma_c_iw = self.load('Sigma_c_iw')
+        if 'dmu' in p.keys():
+            dmu = p['dmu']
+            del p['dmu']
+        elif self.next_loop() > 0:
+            dmu = self.load('dmu')
         else:
-            mu = p['u'] * .5
+            dmu = 0
         if self.next_loop() > 0:
             mix = MixUpdate(self.load('Sigma_c_iw'), self.load('dmu'))
         else:
             mix = MixUpdate(sigma_c_iw, dmu)
+        if 'mu' in p.keys():
+            mu = p['mu']
+        else:
+            mu = 0
 
         # Checkout G_loc for blocks after symmetry transformation and initialize solver
         if not ('symmetry_transformation' in p.keys()): p['symmetry_transformation'] = identity(n_sites)
@@ -149,7 +158,7 @@ class CDmft(object):
         else:
             sym_ind = sym_indices(scheme.g_local(sigma_c_iw, dmu), p['symmetry_transformation'])
         imp_sol = Solver(beta = p['beta'], gf_struct = dict(sym_ind), n_tau = p['n_tau'], n_iw = p['n_iw'], n_l = p['n_legendre'])
-        if p['verbosity'] > 0: mpi.report('Indices for calculation are:', sym_ind)
+        if p['verbosity'] > 0: mpi.report('Indices for cluster solver are:', sym_ind)
         delta_sym_tau = imp_sol.Delta_tau.copy()
         delta_sym_tau.name = '$\Delta_{sym}$'
         g_sym_iw = BlockGf(name_block_generator = [(ind, GfImFreq(indices = dict(sym_ind)[ind], mesh = g_c_iw[CDmft._spins[0]].mesh)) for ind in dict(sym_ind).keys()], make_copies = False)
@@ -183,6 +192,7 @@ class CDmft(object):
             # Inverse FT
             g_c_iw << scheme.g_local(sigma_c_iw, dmu)
             if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(g_c_iw, p['archive'][0:-3] + 'Gchecksym' + str(loop_nr) + '.png')
+            g_0_c_iw << inverse(inverse(g_c_iw) + sigma_c_iw)
 
             # Use transformation to (block-)diagonalize G: G_sym = U.G.U_dag
             g_sym_iw << g_sym(g_c_iw, p['symmetry_transformation'], sym_ind)
@@ -190,11 +200,12 @@ class CDmft(object):
             if mpi.is_master_node() and p['verbosity'] > 1: checktransf_plot(g_sym_iw, p['archive'][0:-3] + 'Gchecktransf' + str(loop_nr) + '.png')
 
             # Dyson-like equation for the Weiss-field
-            energy_loc = array(p['hop'][tuple([0] * lattice_dim)])
+            energy_loc = array(p['hop'][tuple([0] * lattice_dim)]) - identity(n_sites) * dmu
             for s, b in g_0_iw: b << inverse(sigma_sym_iw[s] + inverse(g_sym_iw[s]) + energy_loc_sym(energy_loc, p['symmetry_transformation'], sym_ind)[s])
             if mpi.is_master_node() and p['verbosity'] > 1: 
                 checktransf_plot(g_0_iw, p['archive'][0:-3] + 'Gweisscheck' + str(loop_nr) + '.png')
                 checksym_plot(inverse(g_0_iw), p['archive'][0:-3] + 'invGweisscheckconst' + str(loop_nr) + '.png')
+                checksym_plot(inverse(g_sym_iw), p['archive'][0:-3] + 'invGsymcheckconst' + str(loop_nr) + '.png')
 
             # Solve impurity problem
             rnames = random_generator_names_list()
@@ -206,9 +217,11 @@ class CDmft(object):
                 if i in p.keys():
                     pp[i] = p[i]
             imp_sol.G0_iw << g_0_iw
-            h_loc = h_loc_sym(p['u'], mu, p['hop'][tuple([0] * lattice_dim)], p['symmetry_transformation'], sym_ind, p['v'], p['verbosity'])
+            #h_loc = h_loc_sym(p['u'], mu, p['hop'][tuple([0] * lattice_dim)], p['symmetry_transformation'], sym_ind, p['v'], p['verbosity'])
+            h_loc = h_loc_sym(p['u'], mu, energy_loc, p['symmetry_transformation'], sym_ind, p['v'], p['verbosity'])
             imp_sol.solve(h_loc = h_loc, **pp)
             delta_sym_tau << imp_sol.Delta_tau
+            if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(inverse(imp_sol.G0_iw), p['archive'][0:-3] + 'invGweisscheckconstsolver' + str(loop_nr) + '.png')
 
             # Post-processing the solver-result
             if p['measure_g_l']:
@@ -222,7 +235,7 @@ class CDmft(object):
                     g_sym_iw[name].set_from_fourier(g_tau)
                 g_sym_iw_raw = g_sym_iw.copy()
                 sigma_sym_iw_raw = g_sym_iw.copy()
-                sigma_sym_iw_raw << inverse(g_0_iw) - inverse(g_sym_iw)
+                sigma_sym_iw_raw << inverse(g_0_iw) - inverse(g_sym_iw) - energy_loc_sym(energy_loc, p['symmetry_transformation'], sym_ind)[s]
                 if 'fit_tail' in p:
                     if p['fit_tail']:
                         for name, g in g_sym_iw:
@@ -241,9 +254,11 @@ class CDmft(object):
             g_c_iw << clip_g(g_c_iw, p['clipping_threshold'])
             g_sym_iw << g_sym(g_c_iw, p['symmetry_transformation'], sym_ind)
             for s, b in sigma_sym_iw: b << inverse(g_0_iw[s]) - inverse(g_sym_iw[s]) - energy_loc_sym(energy_loc, p['symmetry_transformation'], sym_ind)[s]
+            if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(inverse(g_sym_iw), p['archive'][0:-3] + 'invGsymcheckconstsolver' + str(loop_nr) + '.png')
 
             # Backtransformation to site-basis
             g_c_iw << g_c(g_sym_iw, p['symmetry_transformation'], sym_ind)
+            if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(inverse(g_c_iw), p['archive'][0:-3] + 'invGccheckconstsolver' + str(loop_nr) + '.png')
             sigma_c_iw << g_c(sigma_sym_iw, p['symmetry_transformation'], sym_ind)
             if 'mix_coeff' in p.keys(): sigma_c_iw, dmu = mix(sigma_c_iw, dmu, p['mix_coeff'])
             sigma_c_iw_raw = sigma_c_iw.copy()
@@ -273,6 +288,10 @@ class CDmft(object):
                 a_l['G_sym_iw_raw'] = g_sym_iw_raw
                 a_l['Sigma_c_iw'] = sigma_c_iw
                 a_l['Sigma_c_iw_raw'] = sigma_c_iw_raw
+                a_l['Sigma_sym_iw'] = sigma_sym_iw
+                a_l['Sigma_sym_iw_raw'] = sigma_sym_iw_raw
+                a_l['G_0_sym_iw'] = g_0_iw
+                a_l['G_0_c_iw'] = g_0_c_iw
                 a_l['mu'] = mu
                 a_l['dmu'] = dmu
                 a_l['density'] = density
@@ -296,6 +315,8 @@ class CDmft(object):
                 a['parameters']['dmu'] = dmu
                 del a
                 mpi.report('')
+
+            mpi.barrier()
 
     def export_results(self):
         """
@@ -361,11 +382,22 @@ class CDmft(object):
             c = 0
             for ind in inds:
                 for orb in inds[ind]:
-                    if 'Sigma_c_iw_raw' in a['Results'][str(self.last_loop())]: plot_from_archive(p['archive'], 'G_sym_iw_raw', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(n_graphs)))
+                    if 'G_sym_iw_raw' in a['Results'][str(self.last_loop())]: plot_from_archive(p['archive'], 'G_sym_iw_raw', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(n_graphs)))
                     plot_from_archive(p['archive'], 'G_sym_iw', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = '+', color = cm.jet(c/float(n_graphs)))
                     c += 1
             pp.savefig()
             plt.close()
+
+        if ('Sigma_sym_iw_raw' in a['Results'][str(self.last_loop())]) and ('Sigma_sym_iw' in a['Results'][str(self.last_loop())]):
+            for m in ['R', 'I']:
+                c = 0
+                for ind in inds:
+                    for orb in inds[ind]:
+                        plot_from_archive(p['archive'], 'Sigma_sym_iw_raw', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(n_graphs)))
+                        plot_from_archive(p['archive'], 'Sigma_sym_iw', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = '+', color = cm.jet(c/float(n_graphs)))
+                        c += 1
+                pp.savefig()
+                plt.close()
         del a
 
         a = HDFArchive(self.parameters['archive'], 'r')
@@ -408,10 +440,12 @@ class CDmft(object):
         if a.is_group('Periodization'):
             lat = Periodization(archive = self.parameters['archive'])
             if lat.d == 2: 
-                path = [[0, 0], [.5, 0], [.5, .5], [0, 0]]
-                path_labels = ['$\Gamma$', 'X', 'M', '$\Gamma$']
+                #path = [[0, 0], [.5, 0], [.5, .5], [0, 0]]
+                #path_labels = ['$\Gamma$', 'X', 'M', '$\Gamma$']
+                path = [[0,0],[.5,0],[1/3.,-1/3.],[0,0]]#kagome
+                path_labels = ['$\Gamma$', 'M', 'K','$\Gamma$']#kagome
             if lat.d == 3: 
-                path = [[0,0,0],[.5,0,.5],[.5,.25,.75],[3/8.,3/8.,.75],[.5,.5,.5],[0,0,0]]
+                path = [[0,0,0],[.5,0,.5],[.5,.25,.75],[3/8.,3/8.,.75],[.5,.5,.5],[0,0,0]]#bcc
                 path_labels = ['$\Gamma$', 'X', 'W', 'K', 'L', '$\Gamma$']
             n_orbs = len(lat.hopping.values()[0])
             n_colors = max(1, n_orbs**2 - 1)

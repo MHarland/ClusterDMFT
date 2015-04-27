@@ -48,7 +48,7 @@ def _cumulant_lat(sigma, mu, ssp, rbz_grid):
     n_k = len(rbz_grid)
     n_sites = len(ssp.values()[0])
     m_sl = [BlockGf(name_block_generator = [(s, GfImFreq(indices = range(n_sites), mesh = sigma[spins[0]].mesh)) for s in spins], name = '$M_{lat}$') for i in range(n_k)]
-    m_c = BlockGf(name_block_generator = [(s, GfImFreq(indices = range(n_sites), mesh = sigma[spins[0]].mesh)) for s in spins], name = '$M_C$')
+    m_c = BlockGf(name_block_generator = [(s, GfImFreq(indices = range(len(sigma[spins[0]].data[0, :, :])), mesh = sigma[spins[0]].mesh)) for s in spins], name = '$M_C$')
     for s, b in m_c: b << inverse(iOmega_n + mu - sigma[s])
     for k in range(n_k):
         for s, b in m_sl[k]:
