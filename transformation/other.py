@@ -49,3 +49,7 @@ def sum_list(list0):
         return x
     else:
         return 0
+
+def delta(x, y):
+    if x == y: return 1
+    return 0

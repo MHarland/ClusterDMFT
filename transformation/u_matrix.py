@@ -1,5 +1,7 @@
 from numpy import empty, identity, array, zeros
 
+from .other import sum_list, delta
+
 class CoulombTensor(object):
 
     def __init__(self, u_int, dimension):
@@ -75,17 +77,3 @@ class NNCoulombTensor(CoulombTensor):
                         for s1 in range(2):
                             for s2 in range(2):
                                 self.data[i, j, k, l, s1, s2] = self.u_int[i, j] * delta(i, k) * delta(j, l) * .5
-
-def sum_list(list0):
-    assert type(list0) == list, 'Parameter is not a list'
-    if list0:
-        x = list0.pop(0)
-        for i in list0:
-            x = x + i
-        return x
-    else:
-        return 0
-
-def delta(x, y):
-    if x == y: return 1
-    return 0

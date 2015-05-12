@@ -40,10 +40,10 @@ class PeriodizationBase(object):
             self.lattice_vectors = lattice_vectors
             self.superlattice_basis = superlattice_basis
             sumk = _init_k_sum(lattice_vectors, lattice_basis, hopping, n_kpts)
-            self.bz_grid = sumk.BZ_Points
-            d = len(sumk.BZ_Points[0, :])
+            self.bz_grid = sumk.bz_points
+            d = len(sumk.bz_points[0, :])
             self.d = d
-            self.bz_weights = sumk.BZ_weights
+            self.bz_weights = sumk.bz_weights
             self.reciprocal_lattice_vectors = reciprocal_latticevectors(lattice_vectors)
             self.eps = sumk.Hopping
 

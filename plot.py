@@ -5,7 +5,7 @@ from pytriqs.archive import HDFArchive
 
 def plot_of_loops_from_archive(archive, function, matsubara_freqs = [0], spins = ['up'], indices = [(0, 0)], RI = str(), **kwargs):
     arch = HDFArchive(archive, 'r')
-    n_loops = arch['Results']['n_dmft_loops']
+    n_loops = arch['results']['n_dmft_loops']
 
     rc('font', size = 10)
     rc('legend', fontsize = 10)
@@ -19,8 +19,8 @@ def plot_of_loops_from_archive(archive, function, matsubara_freqs = [0], spins =
                 f_name = function + '_' + s + '_' + str(i[0]) + str(i[1])
                 for mats_nr in matsubara_freqs:
                     for l in range(n_loops):
-                        re_f_of_l[l] = float(arch['Results'][str(l)][function][s][i].data[mats_nr].real)
-                        im_f_of_l[l] = float(arch['Results'][str(l)][function][s][i].data[mats_nr].imag)
+                        re_f_of_l[l] = float(arch['results'][str(l)][function][s][i].data[mats_nr].real)
+                        im_f_of_l[l] = float(arch['results'][str(l)][function][s][i].data[mats_nr].imag)
                     if RI != 'R':
                         ax.plot(im_f_of_l, label = 'Im' + f_name + '_at_ w' + str(mats_nr), **kwargs)
                     if RI != 'I':
@@ -28,22 +28,22 @@ def plot_of_loops_from_archive(archive, function, matsubara_freqs = [0], spins =
     if 'mu' == function:
         mu = empty(n_loops)
         for l in range(n_loops):
-            mu[l] = arch['Results'][str(l)][function]
+            mu[l] = arch['results'][str(l)][function]
         ax.plot(mu, label = '$\mu$', **kwargs)
     if 'dmu' == function:
         dmu = empty(n_loops)
         for l in range(n_loops):
-            dmu[l] = arch['Results'][str(l)][function]
+            dmu[l] = arch['results'][str(l)][function]
         ax.plot(dmu, label = '$\\tilde{\\mu}$', **kwargs)
     if 'density' == function:
         density = empty(n_loops)
         for l in range(n_loops):
-            density[l] = arch['Results'][str(l)][function]
+            density[l] = arch['results'][str(l)][function]
         ax.plot(density, label = 'density', **kwargs)
     if 'sign' == function:
         density = empty(n_loops)
         for l in range(n_loops):
-            density[l] = arch['Results'][str(l)][function]
+            density[l] = arch['results'][str(l)][function]
         ax.plot(density, label = '<sign>', **kwargs)
         ax.set_ylim(-1.1, 1.1)
 
@@ -53,42 +53,41 @@ def plot_of_loops_from_archive(archive, function, matsubara_freqs = [0], spins =
     del arch
 
 def plot_from_archive(archive, function, loops = [-1], indices = [(0, 0)], spins = ['up'], **kwargs):
-    functions = ['Delta_sym_tau', 'G_c_iw', 'G_c_tau', 'Sigma_c_iw', 'G_sym_l', 'G_sym_iw', 'G_sym_iw_raw', 'Sigma_c_iw_raw', 'Sigma_sym_iw_raw']
-    #assert function in functions, 'first argument has to be in' + str(functions)
     archive = HDFArchive(archive, 'r')
-
     for l in loops:
         if l < 0:
-            ll = archive['Results']['n_dmft_loops'] + l
+            ll = archive['results']['n_dmft_loops'] + l
         else:
             ll = l
         for ind in indices:
             for s in spins:
-                f_name = function + '_' + s + '_' + str(ind[0]) + str(ind[1]) + '_it' + str(ll)
-                f = archive['Results'][str(ll)][function]
+                f_name = s + '_' + str(ind[0]) + str(ind[1]) + '_it' + str(ll)
+                f = archive['results'][str(ll)][function]
                 if 'iw' in function:
                     if 'RI' in kwargs.keys():
                         if kwargs['RI'] == 'R':
-                            oplot(f[s][ind], name = 'Re' + f_name, **kwargs)
+                            oplot(f[s][ind], name = 'Re_' + f_name, **kwargs)
                         if kwargs['RI'] == 'I':
-                            oplot(f[s][ind], name = 'Im' + f_name, **kwargs)
+                            oplot(f[s][ind], name = 'Im_' + f_name, **kwargs)
                     else:
-                        oplot(f[s][ind], name = 'Re' + f_name, RI = 'R', **kwargs)
-                        oplot(f[s][ind], name = 'Im' + f_name, RI = 'I', **kwargs)
-                elif function == 'G_sym_l':
+                        oplot(f[s][ind], name = 'Re_' + f_name, RI = 'R', **kwargs)
+                        oplot(f[s][ind], name = 'Im_' + f_name, RI = 'I', **kwargs)
+                elif function == 'g_transf_l':
                     plt.plot(f[s].data[:, ind[0], ind[1]], label = f_name, **kwargs)
                     plt.xlabel('$l_n$')
-                    plt.ylabel('$G_{sym}(l_n)$')
+                    plt.ylabel('$\\tilde{G}(l_n)$')
                 else:
                     oplot(f[s][ind], name = f_name, **kwargs)
-
     y_ax_lab = '$'
-    if 'G' in f_name: y_ax_lab += 'G'
-    elif 'Sigma' in f_name: y_ax_lab += 'Sigma'
-    elif 'Delta' in f_name: y_ax_lab += 'Delta'
+    if 'transf' in function: y_ax_lab += '\\tilde{'
+    if 'sigma' in function: y_ax_lab += '\\Sigma'
+    elif 'g' in function: y_ax_lab += 'G'
+    elif 'delta' in function: y_ax_lab += '\\Delta'
+    else: y_ax_lab += function
+    if 'transf' in function: y_ax_lab += '}'
     y_ax_lab += "("
-    if 'iw' in f_name: y_ax_lab += 'i\\omega_n'
-    elif 'tau' in f_name : y_ax_lab += '\\tau'
+    if 'iw' in function: y_ax_lab += 'i\\omega_n'
+    elif 'tau' in function: y_ax_lab += '\\tau'
     y_ax_lab += ')$'
     plt.gca().set_ylabel(y_ax_lab)
     del archive
@@ -168,4 +167,8 @@ def plot_ln_abs(gl, *args, **kwargs):
             for j in range(len(b.data[0, :, :])):
                 for n in range(len(b.data[:, 0, 0])):
                     g[s].data[n, i, j] = log(abs(b.data[n, i, j]))
-    oplot(g, *args, **kwargs)
+    for s, b in g:
+        for i in b.indices:
+            for j in b.indices:
+                oplot(b[i, j], name = s+'_'+str(i)+str(j), *args, **kwargs)
+    plt.gca().set_ylabel('$\\mathrm{ln}\\,\\mathrm{abs}\\,\\tilde{G}(l)$')

@@ -51,6 +51,7 @@ def tail_start(g, interval, offset = 4):
 
 def impose_site_symmetries(g, site_symmetries):
     """
+    list of lists of tuples : symmetry of classes of site-indices
     example for dimer in a chain:
     site_symmetries = [[(0, 0), (1, 1)], [(1, 0), (0, 1)]]
     """
@@ -65,6 +66,7 @@ def impose_site_symmetries(g, site_symmetries):
     return g_s
 
 def impose_paramagnetism(g):
+    """takes the expectation value of spins"""
     g_s = g.copy()
     g_s.zero()
     for s1, b1 in g:
@@ -73,13 +75,20 @@ def impose_paramagnetism(g):
     return g_s
 
 class MixUpdate(object):
-    def __init__(self, g, mu):
+    def __init__(self, g, mu, x):
         self.g_old = g.copy()
         self.mu_old = mu
+        self.x = x
 
-    def __call__(self, g, mu, x):
-        g << x * g + (1 - x) * self.g_old
+    def __call__(self, g, mu):
+        g << self.x * g + (1 - self.x) * self.g_old
         self.g_old = g.copy()
-        mu = x * mu + (1 - x) * self.mu_old
+        mu = self.x * mu + (1 - self.x) * self.mu_old
         self.mu_old = mu
         return g, mu
+
+    def set_mix(self, x):
+        self.x = x
+    def get_mix(self):
+        return self.x
+
