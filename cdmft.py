@@ -102,11 +102,10 @@ class CDmft(ArchiveConnected):
             if clp['measure_g_l']:
                 for ind, g in transf.get_g_iw(): g  << LegendreToMatsubara(impurity.G_l[ind])
             else:
-                for ind, g in transf.get_g_iw():
-                    g.set_from_fourier(impurity.G_tau[ind])
-            raw_transf.set_dmft_objs(inverse(transf.get_g_0_iw()) - inverse(transf.get_g_iw()),
+                for ind, g in transf.get_g_iw(): g.set_from_fourier(impurity.G_tau[ind])
+            raw_transf.set_dmft_objs(transf.get_g_0_iw(),
                                      transf.get_g_iw(),
-                                     transf.get_sigma_iw())
+                                     inverse(transf.get_g_0_iw()) - inverse(transf.get_g_iw()))
             if clp['measure_g_tau'] and clp['fit_tail']:
                 for ind, g in transf.get_g_iw():
                     for tind in transf.get_g_struct():
@@ -119,9 +118,9 @@ class CDmft(ArchiveConnected):
             transf.set_sigma_iw(inverse(transf.get_g_0_iw()) - inverse(transf.get_g_iw()))
             dmft.set_dmft_objs(*transf.get_backtransformed_dmft_objs())
             dmft.set_dmu(dmu)
-
             raw_dmft.set_dmft_objs(*raw_transf.get_backtransformed_dmft_objs())
             raw_dmft.set_dmu(dmu)
+
             if clp['mix']: dmft.mix()
             if clp['impose_paramagnetism']: dmft.paramagnetic()
             if clp['site_symmetries']: dmft.site_symmetric(clp['site_symmetries'])

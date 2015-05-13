@@ -62,6 +62,7 @@ def plot_from_archive(archive, function, loops = [-1], indices = [(0, 0)], spins
         for ind in indices:
             for s in spins:
                 f_name = s + '_' + str(ind[0]) + str(ind[1]) + '_it' + str(ll)
+                if 'raw' in function: f_name += '_raw'
                 f = archive['results'][str(ll)][function]
                 if 'iw' in function:
                     if 'RI' in kwargs.keys():
