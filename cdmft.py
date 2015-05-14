@@ -35,7 +35,7 @@ class CDmft(ArchiveConnected):
         for i in kwargs:
             self.parameters[i] = kwargs[i]
         super(CDmft, self).__init__(**self.parameters)
-        if mpi.is_masternode():
+        if mpi.is_master_node():
             archive = HDFArchive(self.parameters['archive'], 'a')
             archive['CDmft_version'] = CDmft._version
             del archive
