@@ -35,9 +35,10 @@ class CDmft(ArchiveConnected):
         for i in kwargs:
             self.parameters[i] = kwargs[i]
         super(CDmft, self).__init__(**self.parameters)
-        archive = HDFArchive(self.parameters['archive'], 'a')
-        archive['CDmft_version'] = CDmft._version
-        del archive
+        if mpi.is_masternode():
+            archive = HDFArchive(self.parameters['archive'], 'a')
+            archive['CDmft_version'] = CDmft._version
+            del archive
 
     def set_parameters(self, parameters):
         """parameters: dict"""
