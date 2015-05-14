@@ -1,6 +1,7 @@
 import os
 from pytriqs.archive import HDFArchive
 from pytriqs.gf.local import BlockGf, GfImFreq, GfReFreq, GfImTime
+from pytriqs.utility import mpi
 
 class ArchiveConnected(object):
     """
@@ -8,11 +9,12 @@ class ArchiveConnected(object):
     """
     def __init__(self, archive, *args, **kwargs):
         self.archive = archive
-        if not os.path.exists(archive):
+        if not os.path.exists(archive) and mpi.is_master_node():
             archive = HDFArchive(archive, 'w')
             archive.create_group('results')
             archive['results']['n_dmft_loops'] = 0
             del archive
+        mpi.barrier()
 
     def next_loop(self):
         """returns the DMFT loop nr. of the next loop"""
