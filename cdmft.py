@@ -15,7 +15,7 @@ from .archive import ArchiveConnected
 from .dmft_struct import DMFTObjects
 from .schemes import get_scheme
 from .lattice.superlatticetools import dispersion as energy_dispersion #remove somehow
-from .periodization import Periodization
+from .periodization.periodization import ClusterPeriodization
 from .plot import plot_from_archive, plot_of_loops_from_archive, checksym_plot, checktransf_plot, plot_ln_abs #move to dmftobjects?
 from .loop_parameters import CleanLoopParameters
 from .spectrum import get_spectrum #plot
@@ -154,8 +154,6 @@ class CDmft(ArchiveConnected):
                 a_l['density'] = density
                 a_l['sign'] = impurity.average_sign
                 a_l['spectrum'] = get_spectrum(impurity)
-                a_l['eps'] = scheme.eps_rbz
-                a_l['rbz_grid'] = scheme.rbz_grid
                 a_l['loop_time'] = {'seconds': time() - duration,
                                     'hours': (time() - duration)/3600., 
                                     'days': (time() - duration)/3600./24.}
@@ -174,21 +172,20 @@ class CDmft(ArchiveConnected):
 
             mpi.barrier()
 
-    def export_results(self):
+    def export_results(self, filename = False, prange = (0, 60)):
         """
         routine to export easily a selection of results into a pdf file
-        """
-        if mpi.is_master_node(): self._export_results()
+        """        
+        if mpi.is_master_node(): self._export_results(filename = filename, prange = prange)
 
-    def _export_results(self):
-        prange = (0, 60)
+    def _export_results(self, filename = False, prange = (0, 60)):
         p = self.parameters = self.load('parameters')
+        p['archive'] = self.archive
         n_sites = p['n_sites']
         sites = p['sites']
-
         spins = p['spins']
 
-        filename = p['archive'][0:-3] + '.pdf'
+        if not filename: filename = p['archive'][0:-3] + '.pdf'
         pp = PdfPages(filename)
 
         functions = ['g_c_iw', 'sigma_c_iw']
@@ -232,40 +229,25 @@ class CDmft(ArchiveConnected):
         n_graphs = 0
         for spin, orb_list in inds.items():
             n_graphs += len(orb_list)
-        for m in ['R', 'I']:
-            c = 0
-            for ind in inds:
-                for orb in inds[ind]:
-                    if 'g_transf_iw_raw' in a['results'][str(self.last_loop())]: plot_from_archive(p['archive'], 'g_transf_iw_raw', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(n_graphs-1)))
-                    plot_from_archive(p['archive'], 'g_transf_iw', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = '+', color = cm.jet(c/float(n_graphs-1)))
-                    c += 1
-            pp.savefig()
-            plt.close()
-
-        if ('sigma_transf_iw_raw' in a['results'][str(self.last_loop())]) and ('sigma_transf_iw' in a['results'][str(self.last_loop())]):
+        for f in ['g_transf_iw', 'sigma_transf_iw']:
             for m in ['R', 'I']:
                 c = 0
                 for ind in inds:
                     for orb in inds[ind]:
-                        plot_from_archive(p['archive'], 'sigma_transf_iw_raw', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(n_graphs-1)))
-                        plot_from_archive(p['archive'], 'sigma_transf_iw', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = '+', color = cm.jet(c/float(n_graphs-1)))
+                        plot_from_archive(p['archive'], f+'_raw', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(n_graphs-1)))
+                        plot_from_archive(p['archive'], f, indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = '+', color = cm.jet(c/float(n_graphs-1)))
                         c += 1
                 pp.savefig()
                 plt.close()
         del a
 
-        a = HDFArchive(self.parameters['archive'], 'r')
-        in_archive = False
-        if 'sigma_c_iw_raw' in a['results'][str(self.last_loop())]:
-            in_archive = True
-        del a
-        if in_archive:
+        for f in ['g_c_iw_raw', 'sigma_c_iw_raw']:
             for m in ['R', 'I']:
                 c = 0
                 for i in range(n_sites):
                     for j in range(n_sites):
-                        plot_from_archive(p['archive'], 'sigma_c_iw_raw', indices = [(i, j)], spins = ['up'], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(-1+n_sites**2)))
-                        plot_from_archive(p['archive'], 'sigma_c_iw_raw', indices = [(i, j)], spins = ['down'], RI = m, x_window = prange, marker = '+', color = cm.jet(c/float(-1+n_sites**2)))
+                        plot_from_archive(p['archive'], f, indices = [(i, j)], spins = ['up'], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(-1+n_sites**2)))
+                        plot_from_archive(p['archive'], f, indices = [(i, j)], spins = ['down'], RI = m, x_window = prange, marker = '+', color = cm.jet(c/float(-1+n_sites**2)))
                         c += 1
                 pp.savefig()
                 plt.close()
@@ -280,78 +262,16 @@ class CDmft(ArchiveConnected):
             pp.savefig()
             plt.close()
 
-        functions = ['g_c_iw', 'sigma_c_iw', 'density']
-        a = HDFArchive(self.parameters['archive'], 'r')
-        if 'sign' in a['results'][str(self.last_loop())]: functions.append('sign')
-        if 'dmu' in a['results'][str(self.last_loop())]: functions.append('dmu')
-        del a
+        functions = ['g_c_iw', 'sigma_c_iw']
+        for f in functions:
+            plot_of_loops_from_archive(p['archive'], f, indices = [(0, i) for i in sites], marker = '+')
+            pp.savefig()
+            plt.close()
+        functions = ['density', 'sign', 'dmu']
         for f in functions:
             plot_of_loops_from_archive(p['archive'], f, marker = '+')
             pp.savefig()
             plt.close()
-
-        a = HDFArchive(self.parameters['archive'], 'r')
-        if a.is_group('Periodization'):
-            lat = Periodization(archive = self.parameters['archive'])
-            if lat.d == 2: 
-                #path = [[0, 0], [.5, 0], [.5, .5], [0, 0]]
-                #path_labels = ['$\Gamma$', 'X', 'M', '$\Gamma$']
-                path = [[0,0],[.5,0],[1/3.,-1/3.],[0,0]]#kagome
-                path_labels = ['$\Gamma$', 'M', 'K','$\Gamma$']#kagome
-            if lat.d == 3: 
-                path = [[0,0,0],[.5,0,.5],[.5,.25,.75],[3/8.,3/8.,.75],[.5,.5,.5],[0,0,0]]#bcc
-                path_labels = ['$\Gamma$', 'X', 'W', 'K', 'L', '$\Gamma$']
-            n_orbs = len(lat.hopping.values()[0])
-            n_colors = max(1, n_orbs**2 - 1)
-            plt.gca().set_color_cycle([plt.cm.jet(i/float(n_colors)) for i in range(n_orbs**2)])
-            oplot(lat.get_g_lat_loc()['up'], '-+', x_window = prange, RI = 'I')
-            pp.savefig()
-            plt.close()
-            plt.gca().set_color_cycle([plt.cm.jet(i/float(n_colors)) for i in range(n_orbs**2)])
-            oplot(lat.get_g_lat_loc()['up'], '-+', x_window = prange, RI = 'R')
-            pp.savefig()
-            plt.close()
-            plt.gca().set_color_cycle([plt.cm.jet(i/float(n_colors)) for i in range(n_orbs**2)])
-            oplot(lat.get_sigma_lat_loc()['up'], '-+', x_window = prange, RI = 'I')
-            pp.savefig()
-            plt.close()
-            plt.gca().set_color_cycle([plt.cm.jet(i/float(n_colors)) for i in range(n_orbs**2)])
-            oplot(lat.get_sigma_lat_loc()['up'], '-+', x_window = prange, RI = 'R')
-            pp.savefig()
-            plt.close()
-            lat.plot_dos_loc()
-            pp.savefig()
-            plt.close()
-            for p in path:
-                lat.plot('G_lat', p, 'up', (0, 0), '-+', x_window = prange)
-                plt.gca().set_ylabel('$G_{lat}(i\omega_n)$')
-                pp.savefig()
-                plt.close()
-            for p in path:
-                lat.plot('Sigma_lat', p,'up', (0, 0), '-+', x_window = prange)
-                plt.gca().set_ylabel('$\Sigma_{lat}(i\omega_n)$')
-                pp.savefig()
-                plt.close()
-            lat.plot_dos_k_w(path)
-            pp.savefig()
-            plt.close()
-            lat.color_dos_k_w(path, path_labels)
-            pp.savefig()
-            plt.close()
-            if lat.d == 2:
-                lat.plot2d_k('Tr_G_lat', 0, imaginary_part = True)
-                pp.savefig()
-                plt.close()
-                lat.plot2d_k('Sigma_lat', 0, 'up', 0, imaginary_part = True)
-                pp.savefig()
-                plt.close()
-                lat.plot2d_dos_k()
-                pp.savefig()
-                plt.close()
-                lat.plot2d_energy_dispersion()
-                pp.savefig()
-                plt.close()
-        del a
 
         arch_text = self.archive_content(group = ['results', str(self.last_loop())], dont_exp = ['bz_grid', 'bz_weights', 'eps', 'rbz_grid'])
         line = 1
@@ -368,6 +288,7 @@ class CDmft(ArchiveConnected):
                 line = 1
 
         pp.close()
+        print filename, 'ready'
 
     def plot(self, function, *args, **kwargs):
         """

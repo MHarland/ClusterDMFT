@@ -8,7 +8,7 @@ max_freq = int(sys.argv[1])
 
 for n, arch in enumerate(sys.argv[2:]):
     c = CDmft(archive = arch)
-    g = c.load('G_c_iw')
+    g = c.load('g_c_iw')
     for s, b in g:
         for i in range(len(b.data[0,:,:])):
             for j in range(len(b.data[0,:,:])):

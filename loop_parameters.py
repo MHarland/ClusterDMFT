@@ -39,7 +39,7 @@ class CleanLoopParameters(dict):
                                 'measure_g_l': True,
                                 'measure_pert_order': True,
                                 'make_histograms': False
-                                }#todo
+                                }
 
     def __init__(self, *args, **kwargs):
         super(CleanLoopParameters, self).__init__(*args, **kwargs)
@@ -56,11 +56,12 @@ class CleanLoopParameters(dict):
         return cthyb
 
     @staticmethod
-    def _missing_dmft_parameters(parameters): #todo
+    def _missing_dmft_parameters(parameters):
         """gets dict, returns list of the missing"""
         mispar = list()
-        #if parameters['scheme'] == 'pcdmft_li':
-        #    nessecary.append['sem...']
+        if 'scheme' in parameters.keys():
+            if 'pcdmft' in parameters['scheme']:
+                CleanLoopParameters._obligatory.append('periodization')
         for par in CleanLoopParameters._obligatory:
             assert par in parameters.keys(), 'obligatory parameter \'' + par + '\' is missing'
         for par in CleanLoopParameters._replenishing_parameters.keys():

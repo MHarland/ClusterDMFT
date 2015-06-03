@@ -39,12 +39,15 @@ class ArchiveConnected(object):
         function_name: 'Sigma_c_iw', 'G_c_iw', ...
         loop_nr: int, -1 gives the last loop nr.
         """
-        a = HDFArchive(self.archive, 'r')
-        if loop_nr < 0:
-            function = a['results'][str(self.next_loop() + loop_nr)][function_name]
-        else:
-            function = a['results'][str(loop_nr)][function_name]
-        del a
+        function = None
+        if mpi.is_master_node():
+            a = HDFArchive(self.archive, 'r')
+            if loop_nr < 0:
+                function = a['results'][str(self.next_loop() + loop_nr)][function_name]
+            else:
+                function = a['results'][str(loop_nr)][function_name]
+            del a
+        function = mpi.bcast(function)
         return function
 
     def archive_content(self, group = list(), dont_exp = list(), n_max_subgroups = 50, shift_step_len = 10):
@@ -55,16 +58,18 @@ class ArchiveConnected(object):
         recursion depth can be set
         indentation for tree structure can be set
         """
-        archive = self.archive
-        arch = HDFArchive(archive, 'r')
-        content = archive + '\n'
-        shift = str()
-        for i, g in enumerate(group):
-            arch = arch[g]
-            shift += ' ' * shift_step_len
-            content += shift + g + '\n'
-        content = _archive_content(arch, content, shift, shift_step_len, dont_exp, n_max_subgroups)
-        del arch
+        content = str()
+        if mpi.is_master_node():
+            archive = self.archive
+            arch = HDFArchive(archive, 'r')
+            content = archive + '\n'
+            shift = str()
+            for i, g in enumerate(group):
+                arch = arch[g]
+                shift += ' ' * shift_step_len
+                content += shift + g + '\n'
+            content = _archive_content(arch, content, shift, shift_step_len, dont_exp, n_max_subgroups)
+            del arch
         return content
 
 def _archive_content(group, content, shift, shift_step_len, dont_exp, n_max_subgroups):

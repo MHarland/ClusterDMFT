@@ -1,51 +1,47 @@
-from ..post_process_g import clip_g
+from itertools import izip
+from matplotlib.backends.backend_pdf import PdfPages
 from pytriqs.gf.local import BlockGf, GfImFreq, iOmega_n, inverse, GfReFreq
-from pytriqs.gf.local.descriptor_base import Const
 from pytriqs.archive import HDFArchive
 from pytriqs.plot.mpl_interface import oplot
-import pytriqs.utility.mpi as mpi
+from pytriqs.utility import mpi
 from numpy import array, exp, dot, sqrt, pi, log, linspace, empty
 from numpy.linalg import norm
 from matplotlib import pyplot as plt, cm
 from mpl_toolkits.mplot3d import Axes3D
 
-from ..lattice.superlatticetools import dispersion as energy_dispersion, _init_k_sum, reciprocal_latticevectors
+from ..lattice.superlatticetools import dispersion as energy_dispersion, _init_k_sum
+from ..mpiLists import scatter_list, allgather_list
 
 # TODO make plots nice, what if cluster of lattice that is not fully trans inv?
 # adjust plots for non-orthogonal reciprocal lattice vectors
 # TODO FFT, izip from itertools, mpi
 
-class PeriodizationBase(object):
+class ClusterPeriodization(object):
     """
-    Assumes full translation symmetry, 1 band.
-    Tested for a square lattice.
-    Some plotmethods are written for 2d-lattices only, the rest is supposed to be generic.
+    Generic periodization, provides methods for presenting periodization results, independently of the specific method used (cumulant or self-energy).
     """
-
-    def __init__(self, lattice_vectors = [[0, 0, 0]], lattice_basis = [[0, 0, 0]], hopping = {(0, 0) : [[0]]}, n_kpts = 0, superlattice_basis = [[0]], archive = False):
+    def __init__(self, cluster_lattice = [[0, 0, 0]], cluster = [[0, 0, 0]], hopping = {(0, 0) : [[0]]}, n_kpts = 0, archive = False, spins = ['up', 'down'], groupname = 'periodization', sym_path = [], sym_path_lbls = [], *args, **kwargs):
         """
-        The lattice properties have to be those of the FULLY periodized Lattice, i.e. not those of any superlattice.
         coordinates-basis:
-        lattice_vectors : cartesian
-        lattice_basis : lattice
-        hopping : lattice
-        superlattice_basis: lattice
+        cluster_lattice : cartesian
+        cluster : lattice
+        t : lattice
         """
         if archive:
-            self.load_from_disk(archive)
+            self.__dict__ = self.load_from_disk(archive, groupname)
         else:
             self.n_kpts = n_kpts
             self.hopping = hopping
-            self.lattice_basis = lattice_basis
-            self.lattice_vectors = lattice_vectors
-            self.superlattice_basis = superlattice_basis
-            sumk = _init_k_sum(lattice_vectors, lattice_basis, hopping, n_kpts)
+            self.cluster = cluster
+            self.cluster_lattice = cluster_lattice
+            sumk = _init_k_sum(cluster_lattice, cluster, hopping, n_kpts)
             self.bz_grid = sumk.bz_points
-            d = len(sumk.bz_points[0, :])
-            self.d = d
+            self.d = len(sumk.bz_points[0, :])
             self.bz_weights = sumk.bz_weights
-            self.reciprocal_lattice_vectors = reciprocal_latticevectors(lattice_vectors)
-            self.eps = sumk.Hopping
+            self.eps = sumk.hopping
+            self.spins = spins
+            self.sym_path = sym_path
+            self.sym_path_lbls = sym_path_lbls
 
     def get_sigma_lat(self):
         return self.sigma_lat
@@ -70,13 +66,27 @@ class PeriodizationBase(object):
 
     def set_sigma_lat_loc(self, sigma_lat):
         self.sigma_lat_loc = _g_lat_loc(sigma_lat, self.bz_weights, self.d)
-        self.sigma_lat_loc.name = '$\Sigma_{lat,loc}$'
+        self.sigma_lat_loc.name = '$\Sigma^{(lat,loc)}$'
+        for s, b in self.sigma_lat_loc: b.name = '$\Sigma^{(lat,loc)}_{'+s+'}$'
 
     def get_tr_g_lat_pade(self):
         return self.tr_g_lat_pade
 
     def set_tr_g_lat_pade(self, g_lat, **kwargs):
-        self.tr_g_lat_pade = _tr_g_lat_pade(g_lat, **kwargs)
+        self.tr_g_lat_pade = _tr_g_lat_pade(g_lat, spins = self.spins, **kwargs)
+
+    def set_dos_loc(self, g_lat_loc, **kwargs):
+        k_dos = ['pade_n_omega_n', 'pade_eta', 'dos_n_points', 'dos_window']
+        p_dos = dict()
+        for key, val in kwargs.items():
+            if key in k_dos:
+                p_dos.update({key : val})
+        if not 'name' in kwargs:
+            kwargs.update({'name' : 'LDOS'})
+        self.dos_loc = _tr_g_lat_pade([g_lat_loc], self.spins, **p_dos)[0]
+
+    def get_dos_loc(self):
+        return self.dos_loc
 
     def get_bz_grid(self):
         return self.bz_grid
@@ -91,70 +101,68 @@ class PeriodizationBase(object):
         t = array(self.lattice_vectors)
         return dot(m, t.T)
 
-    def write_to_disk(self, filename):
-        arch = HDFArchive(filename, 'a')
-        if arch.is_group('Periodization'):
-            del arch['Periodization']
-        arch.create_group('Periodization')
-        a_p = arch['Periodization']
-        for key, val in self.__dict__.items():
-            if key == 'hopping':
-                a_p.create_group(key)
-                a_h = a_p[key]
-                for r, h in val.items():
-                    a_h.create_group(str(r))
-                    a_h_r = a_h[str(r)]
-                    a_h_r['R'] = r
-                    a_h_r['h'] = h
-            elif type(val) == list:
-                saves = dict([(str(i), val[i]) for i in range(len(val))])
-                a_p.create_group(key)
-                a_p[key].update(saves)
-            elif type(val) == dict:
-                a_p.create_group(key)
-                a_p[key].update(val)                
-            else:
-                a_p[key] = val
-        del arch
-
-    def load_from_disk(self, filename):
-        arch = HDFArchive(filename, 'r')
-        a_p = arch['Periodization']
-        for key, val in a_p.items():
-            if key == 'hopping':
-                self.__dict__[key] = dict()
-                for r in val.keys():
-                    self.__dict__[key].update({val[r]['R'] : val[r]['h']})
-            elif a_p.is_group(key):
-                if type(val) == BlockGf:
-                    self.__dict__[key] = val
+    def write_to_disk(self, filename, groupname = 'periodization'):
+        if mpi.is_master_node():
+            arch = HDFArchive(filename, 'a')
+            if arch.is_group(groupname):
+                del arch[groupname]
+            arch.create_group(groupname)
+            a_p = arch[groupname]
+            for key, val in self.__dict__.items():
+                if key == 'hopping':
+                    a_p.create_group(key)
+                    a_h = a_p[key]
+                    for r, h in val.items():
+                        a_h.create_group(str(r))
+                        a_h_r = a_h[str(r)]
+                        a_h_r['R'] = r
+                        a_h_r['h'] = h
+                elif type(val) == list:
+                    saves = dict([(str(i), val[i]) for i in range(len(val))])
+                    a_p.create_group(key)
+                    a_p[key].update(saves)
                 elif type(val) == dict:
-                    if key != 'hopping':
-                        self.__dict__[key] = dict()
-                        self.__dict__[key].update(val)
-                    else:
-                        pass
-                elif type(val) == tuple:
-                    self.__dict__[key] = list()
-                    for v in val:
-                        self.__dict__[key].append(v)
+                    a_p.create_group(key)
+                    a_p[key].update(val)                
                 else:
-                    self.__dict__[key] = [0] * len(a_p[key])
-                    for key2, val2 in val.items():
-                        self.__dict__[key][int(key2)] = val2
-            elif a_p.is_data(key):
-                self.__dict__[key] = val
+                    a_p[key] = val
+            del arch
+        mpi.barrier()
+
+    def load_from_disk(self, filename, groupname):
+        if mpi.is_master_node():
+            arch = HDFArchive(filename, 'r')
+            a_p = arch[groupname]
+            for key, val in a_p.items():
+                if key == 'hopping':
+                    self.__dict__[key] = dict()
+                    for r in val.keys():
+                        self.__dict__[key].update({val[r]['R'] : val[r]['h']})
+                elif a_p.is_group(key):
+                    if type(val) == BlockGf:
+                        self.__dict__[key] = val
+                    elif type(val) == dict:
+                        if key != 'hopping':
+                            self.__dict__[key] = dict()
+                            self.__dict__[key].update(val)
+                        else:
+                            pass
+                    elif type(val) == tuple:
+                        self.__dict__[key] = list()
+                        for v in val:
+                            self.__dict__[key].append(v)
+                    else:
+                        self.__dict__[key] = [0] * len(a_p[key])
+                        for key2, val2 in val.items():
+                            self.__dict__[key][int(key2)] = val2
+                elif a_p.is_data(key):
+                    self.__dict__[key] = val
+                else: print 'Warning: ', key, 'not loaded from archive'
+        self.__dict__ = mpi.bcast(self.__dict__)
+        return self.__dict__
 
     def plot_dos_loc(self, **kwargs):
-        k_dos = ['pade_n_omega_n', 'pade_eta', 'dos_n_points', 'dos_window', 'clip_threshold']
-        p_dos = dict()
-        for key, val in kwargs.items():
-            if key in k_dos:
-                p_dos.update({key : val})
-                del kwargs[key]
-        if not 'name' in kwargs:
-            kwargs.update({'name' : 'LDOS'})
-        oplot(_tr_g_lat_pade([self.g_lat_loc], **p_dos)[0], RI = 'S', **kwargs)
+        oplot(self.dos_loc, RI = 'S', **kwargs)
 
     def plot2d_energy_dispersion(self, band = 0, **kwargs):
         """
@@ -280,24 +288,91 @@ class PeriodizationBase(object):
         plt.ylabel('$k_y$')
         plt.title(pname + '$(k, i\omega_' + str(matsubara_freq) + ')$')
 
-def _tr_g_lat_pade(g_lat, pade_n_omega_n = 40, pade_eta = 10**(-2), dos_n_points = 1200, dos_window = (-10, 10), clip_threshold = 0):
-    tr_g_lat_pade = list()
-    for gk in g_lat:
-        tr_spin_g = GfImFreq(indices = range(len(gk['up'].data[0, :, :])), mesh = gk.mesh)
-        tr_spin_g << gk['up'] + gk['down']
-        tr_band_g = GfImFreq(indices = [0], mesh = gk.mesh)
-        tr_band_g.zero()
-        _temp = tr_band_g.copy()
-        for i in range(len(tr_spin_g.data[0, :, :])):
-            tr_band_g << _temp + tr_spin_g[i, i]
-            _temp << tr_band_g
-        del _temp
+    def export_results(self, filename = 'periodization.pdf', prange = (0, 60)):
+        """
+        routine to export easily a selection of results into a pdf file
+        """
+        if mpi.is_master_node(): self._export_results(filename = filename, prange = prange)
 
+    def _export_results(self, filename = 'periodization.pdf', prange = (0, 60)):
+        #if lat.d == 2: 
+        #    path = [[0, 0], [.5, 0], [.5, .5], [0, 0]]
+        #    path_labels = ['$\Gamma$', 'X', 'M', '$\Gamma$']
+        #    #path = [[0,0],[.5,0],[1/3.,-1/3.],[0,0]]#kagome
+        #    #path_labels = ['$\Gamma$', 'M', 'K','$\Gamma$']#kagome
+        #if lat.d == 3: 
+        #    path = [[0,0,0],[.5,0,.5],[.5,.25,.75],[3/8.,3/8.,.75],[.5,.5,.5],[0,0,0]]#bcc
+        #    path_labels = ['$\Gamma$', 'X', 'W', 'K', 'L', '$\Gamma$']
+        pp = PdfPages(filename)
+        n_orbs = len(self.hopping.values()[0])
+        n_colors = max(1, n_orbs**2 - 1)
+        plt.gca().set_color_cycle([plt.cm.jet(i/float(n_colors)) for i in range(n_orbs**2)])
+        oplot(self.get_g_lat_loc()['up'], '-+', x_window = prange, RI = 'I')
+        pp.savefig()
+        plt.close()
+        plt.gca().set_color_cycle([plt.cm.jet(i/float(n_colors)) for i in range(n_orbs**2)])
+        oplot(self.get_g_lat_loc()['up'], '-+', x_window = prange, RI = 'R')
+        pp.savefig()
+        plt.close()
+        plt.gca().set_color_cycle([plt.cm.jet(i/float(n_colors)) for i in range(n_orbs**2)])
+        oplot(self.get_sigma_lat_loc()['up'], '-+', x_window = prange, RI = 'I')
+        pp.savefig()
+        plt.close()
+        plt.gca().set_color_cycle([plt.cm.jet(i/float(n_colors)) for i in range(n_orbs**2)])
+        oplot(self.get_sigma_lat_loc()['up'], '-+', x_window = prange, RI = 'R')
+        pp.savefig()
+        plt.close()
+        self.plot_dos_loc()
+        pp.savefig()
+        plt.close()
+        if self.sym_path and self.sym_path_lbls:
+            for p in self.sym_path:
+                self.plot('G_lat', p, 'up', (0, 0), '-+', x_window = prange)
+                plt.gca().set_ylabel('$G_{lat}(i\omega_n)$')
+                pp.savefig()
+                plt.close()
+            for p in self.sym_path:
+                self.plot('Sigma_lat', p,'up', (0, 0), '-+', x_window = prange)
+                plt.gca().set_ylabel('$\Sigma_{lat}(i\omega_n)$')
+                pp.savefig()
+                plt.close()
+            self.plot_dos_k_w(self.sym_path)
+            pp.savefig()
+            plt.close()
+            self.color_dos_k_w(self.sym_path, self.sym_path_lbls)
+            pp.savefig()
+            plt.close()
+        if self.d == 2:
+            self.plot2d_k('Tr_G_lat', 0, imaginary_part = True)
+            pp.savefig()
+            plt.close()
+            self.plot2d_k('Sigma_lat', 0, 'up', 0, imaginary_part = True)
+            pp.savefig()
+            plt.close()
+            self.plot2d_dos_k()
+            pp.savefig()
+            plt.close()
+            self.plot2d_energy_dispersion()
+            pp.savefig()
+            plt.close()
+        pp.close()
+        print filename, 'ready'
+
+def _tr_g_lat_pade(g_lat, spins, pade_n_omega_n = 40, pade_eta = 5*10**(-2), dos_n_points = 1200, dos_window = (-5, 5)):
+    n_k = len(g_lat)
+    n_sites = len(g_lat[0][spins[0]].data[0,:,:])
+    bands = range(n_sites)
+    tr_spin_g = GfImFreq(indices = bands, mesh = g_lat[0][spins[0]].mesh)
+    tr_band_g = GfImFreq(indices = [0], mesh = g_lat[0][spins[0]].mesh)
+    tr_g_lat_pade = [GfReFreq(indices = [0], window = dos_window, n_points = dos_n_points, name = 'Tr$G_{lat}$') for i in range(n_k)]
+    tr_g_lat_pade_p = scatter_list(tr_g_lat_pade)
+    for g_lat_k, tr_g_lat_pade_k in izip(scatter_list(g_lat), tr_g_lat_pade_p):
+        tr_spin_g << g_lat_k[spins[0]] + g_lat_k[spins[1]]
+        tr_band_g.zero()
+        for i in bands: tr_band_g << tr_band_g + tr_spin_g[i, i]
         tr_g = tr_band_g
-        tr_g_lat_pade.append(GfReFreq(indices = [0], window = dos_window,
-                                      n_points = dos_n_points, name = 'Tr$G_{lat}$'))
-        tr_g_lat_pade[-1].set_from_pade(clip_g(tr_g, clip_threshold), n_points = pade_n_omega_n,
-                                        freq_offset = pade_eta)
+        tr_g_lat_pade_k.set_from_pade(tr_g, n_points = pade_n_omega_n, freq_offset = pade_eta)
+    tr_g_lat_pade = allgather_list(tr_g_lat_pade_p)
     return tr_g_lat_pade
 
 def _k_ind(bz_grid, k):
@@ -314,28 +389,31 @@ def _k(bz_grid, k):
     return bz_grid[_k_ind(bz_grid, k)]
 
 def _g_lat_loc(g_lat, bz_weights, d):
+    n_k = len(g_lat)
     g_lat_loc = g_lat[0].copy()
     g_lat_loc.zero()
     g_lat_loc.name = '$G_{lat,loc}$'
-    for i in range(len(g_lat)):
-        for n, b in g_lat_loc:
-            _temp = g_lat_loc.copy()
-            g_lat_loc[n] << _temp[n] + g_lat[i][n] * bz_weights[i]
-    del _temp
+    for s, b in g_lat_loc: b.name = '$G^{(lat,loc)}_{'+s+'}$'
+    g_latArray = empty([n_k], dtype = object)
+    for i in range(n_k): g_latArray[i] = g_lat[i]
+    for weight_k, g_lat_k in izip(*[mpi.slice_array(a) for a in [bz_weights, g_latArray]]):
+        for s, b in g_lat_loc:
+            b += g_lat_k[s] * weight_k
+    g_lat_loc << mpi.all_reduce(mpi.world, g_lat_loc, lambda x, y: x + y)
     return g_lat_loc
 
 def _tr_g_lat(g_lat):
+    n_k = len(g_lat)
     for s, b in g_lat[0]:
         bands = range(len(b.data[0, :, :]))
         break
-    tr_g_lat = list()
-    for g_lat_k in g_lat:
-        tr_g_lat_k = GfImFreq(indices = [0], mesh = g_lat_k.mesh)
+    tr_g_lat = [GfImFreq(indices = [0], mesh = g_lat[0].mesh) for i in range(n_k)]
+    tr_g_lat_p = scatter_list(tr_g_lat)
+    for g_lat_k, tr_g_lat_k in izip(scatter_list(g_lat), tr_g_lat_p):
         for spin, block in g_lat_k:
             for band in bands:
-                _temp = tr_g_lat_k.copy()
-                tr_g_lat_k << _temp + g_lat_k[s][band, band]
-        tr_g_lat.append(tr_g_lat_k)
+                tr_g_lat_k += g_lat_k[s][band, band]
+    tr_g_lat = allgather_list(tr_g_lat_p)
     return tr_g_lat
 
 def _k_ind_path(bz_grid, path, samp_steps = 10**2):

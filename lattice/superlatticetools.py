@@ -14,7 +14,7 @@ class Superlattice(object):
         """
         sl_vec: superlatticevectors, cartesian coordinates
         sl_basis: superlatticebasis, superlattice coordinates
-        h: hopping tensor of the basis, superlattice coordinates
+        h: hopping tensor of the basis, i.e. intracluster-hoppings, superlattice coordinates
         """
         self.sl_vec = sl_vec
         self.sl_basis = sl_basis
