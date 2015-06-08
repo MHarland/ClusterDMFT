@@ -32,6 +32,7 @@ class MPeriodization(ClusterPeriodization):
         self.set_g_lat(self.m_lat)
         self.set_g_lat_loc(self.g_lat)
         self.set_tr_g_lat(self.g_lat)
+        self.set_tr_sigma_lat(self.sigma_lat)
         self.set_sigma_lat_loc(self.sigma_lat)
         self.set_tr_g_lat_pade(self.g_lat)
         self.set_dos_loc(self.g_lat_loc)

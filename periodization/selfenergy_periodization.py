@@ -1,5 +1,5 @@
 from itertools import izip
-from numpy import array, exp, dot, pi, empty
+from numpy import array, exp, dot, pi, empty, identity
 from pytriqs.gf.local import BlockGf, GfImFreq, iOmega_n, inverse
 
 from .periodization import ClusterPeriodization
@@ -25,14 +25,17 @@ class SEPeriodization(ClusterPeriodization):
         self.set_g_lat_loc(self.g_lat)
         self.set_tr_g_lat(self.g_lat)
         self.set_sigma_lat_loc(self.sigma_lat)
+        self.set_tr_sigma_lat(self.sigma_lat)
         self.set_tr_g_lat_pade(self.g_lat)
         self.set_dos_loc(self.g_lat_loc)
 
 # code with lists being parallelized, is faster than array views used in TRIQS sumk
 def _sigma_lat(sigma, ssp, rbz_grid, spins):
+    n_iwn = len(sigma[spins[0]].data[:, 0, 0])
+    beta = sigma.beta
     n_k = len(rbz_grid)
     n_sites = len(ssp.values()[0])
-    sigma_sl = [BlockGf(name_block_generator = [(s, GfImFreq(indices = range(n_sites), mesh = sigma[spins[0]].mesh)) for s in spins], name = '$\Sigma_{lat}$') for i in range(n_k)]
+    sigma_sl = [BlockGf(name_block_generator = [(s, GfImFreq(indices = range(n_sites), beta = beta, n_points = n_iwn)) for s in spins], name = '$\Sigma_{lat}$') for i in range(n_k)]
     sigTrans = dict()
     for r in ssp.keys():
         sigTrans[r] = empty([n_sites, n_sites], dtype = object)
@@ -42,7 +45,7 @@ def _sigma_lat(sigma, ssp, rbz_grid, spins):
     sigma_sl_p = scatter_list(sigma_sl)
     for sig_k, k in izip(sigma_sl_p, scatter_list(rbz_grid)):
         for s, b in sig_k:
-            for r,sigTrans_r in sigTrans.items():
+            for r, sigTrans_r in sigTrans.items():
                 for a in range(n_sites):
                     for b in range(n_sites):
                         if type(sigTrans_r[a, b]) == tuple:
@@ -57,6 +60,6 @@ def _g_lat(sigma_lat, mu, eps, bz_grid, spins):
     g_p = scatter_list(g)
     for g_k, sig_k, eps_k in izip(g_p, scatter_list(sigma_lat), scatter_list(eps)):
         for s, b in g_k:
-            b << inverse(iOmega_n + mu - eps_k - sig_k[s])
+            b << inverse((iOmega_n + mu) * identity(n_bands) - eps_k - sig_k[s])
     g = allgather_list(g_p)
     return g

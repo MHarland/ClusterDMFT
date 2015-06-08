@@ -1,46 +1,34 @@
 from numpy import sqrt, cos, sin, pi
-
 from .superlatticetools import Superlattice
 
-class l_dim(Superlattice):
-    def __init__(self, t = -1.):
-        Superlattice.__init__(self,
-                              [[2, 0, 0], [0, 200, 0]], 
-                              [[-.25, 0], [.25, 0]], 
-                              {(.5, 0) : t, (-.5, 0) : t})
+class sq_sq(object):
+    """2by2 cluster in a square lattice"""
 
-    def get_symmetry_transformation(self):
-        return [[1/sqrt(2), 1/sqrt(2)], [1/sqrt(2), -1/sqrt(2)]]
+    def __init__(self):
+        pass
 
-class l_3s(Superlattice):
-    def __init__(self, t = -1.):
-        Superlattice.__init__(self,
-                              [[3, 0, 0], [0, 200, 0]], 
-                              [[-1 / 3., 0], [0, 0], [1 / 3., 0]], 
-                              {(1 / 3., 0) : t, (-1 / 3., 0) : t})
+    def get_hopping(self, t = -1., tnnn = 0):
+        s = tnnn
+        return {(0,0):[[0,t,t,s],[t,0,s,t],[t,s,0,t],[s,t,t,0]],
+                (1,0):[[0,t,0,s],[0,0,0,0],[0,s,0,t],[0,0,0,0]],
+                (1,1):[[0,0,0,s],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+                (0,1):[[0,0,t,s],[0,0,s,t],[0,0,0,0],[0,0,0,0]],
+                (-1,1):[[0,0,0,0],[0,0,s,0],[0,0,0,0],[0,0,0,0]],
+                (-1,0):[[0,0,0,0],[t,0,s,0,],[0,0,0,0],[s,0,t,0]],
+                (-1,-1):[[0,0,0,0],[0,0,0,0],[0,0,0,0],[s,0,0,0]],
+                (0,-1):[[0,0,0,0],[0,0,0,0],[t,s,0,0],[s,t,0,0]],
+                (1,-1):[[0,0,0,0],[0,0,s,0],[0,0,0,0],[0,0,0,0]]}
 
-class l_4s(Superlattice):
-    def __init__(self, t = -1.):
-        Superlattice.__init__(self,
-                              [[4, 0, 0], [0, 4, 0]], 
-                              [[-3 / 8., 0], [-1 / 8., 0], [1 / 8., 0], [3 / 8., 0]], 
-                              {(.25, 0) : t, (-.25, 0) : t})
+    def get_cartesian_clusterlatticevectors(self):
+        return [[1, 0, 0], [0, 1, 0]]
 
-    def get_C2_transformation(self):
-        n = 1/sqrt(2)
-        return [[n,0,0,n],[0,n,n,0],[0,-n,n,0],[-n,0,0,n]]
-
-class sq_sq(Superlattice):
-    def __init__(self, t = -1.):
-        Superlattice.__init__(self,
-                              [[1, 0, 0], [0, 1, 0]],
-                              [[0, 0], [0, .5], [.5, 0], [.5, .5]],
-                              {(0, .5) : t, (0, -.5) : t, (.5, 0) : t, (-.5, 0) : t})
+    def get_clusterlatticebasis(self):
+        return [[0, 0], [0, .5], [.5, 0], [.5, .5]]
 
     def get_transf_orbital(self):
         return [[0.5, 0.5, 0.5, 0.5], [0.5, 0.5, -0.5, -0.5], [0.5, -0.5, 0.5, -0.5], [0.5, -0.5, -0.5, 0.5]]
 
-    def get_g_transf_orbital(self):
+    def get_g_transf_struct_orbital(self):
         return [[str(i)+'-'+s, [0]] for s in ['up', 'down'] for i in range(4)]
 
     def get_site_symmetries_afm(self):
@@ -84,11 +72,41 @@ class sq_sq(Superlattice):
                           [(0,1),(1,2),0,0],
                           [(0,3),(0,1),0,0]],
                 (1, -1): [[0,0,0,0],
+                          [0,0,(1,2),0],
                           [0,0,0,0],
-                          [0,(1,2),0,0],
                           [0,0,0,0]]}
 
     def get_checkerboard_symmetry_transformation(self):
+        n = 1/sqrt(2)
+        print 'check transf!!! todo'
+        return [[n,0,0,n],[0,n,n,0],[0,-n,n,0],[-n,0,0,n]]
+
+"""
+class l_dim(Superlattice):
+    def __init__(self, t = -1.):
+        Superlattice.__init__(self,
+                              [[2, 0, 0], [0, 200, 0]], 
+                              [[-.25, 0], [.25, 0]], 
+                              {(.5, 0) : t, (-.5, 0) : t})
+
+    def get_symmetry_transformation(self):
+        return [[1/sqrt(2), 1/sqrt(2)], [1/sqrt(2), -1/sqrt(2)]]
+
+class l_3s(Superlattice):
+    def __init__(self, t = -1.):
+        Superlattice.__init__(self,
+                              [[3, 0, 0], [0, 200, 0]], 
+                              [[-1 / 3., 0], [0, 0], [1 / 3., 0]], 
+                              {(1 / 3., 0) : t, (-1 / 3., 0) : t})
+
+class l_4s(Superlattice):
+    def __init__(self, t = -1.):
+        Superlattice.__init__(self,
+                              [[4, 0, 0], [0, 4, 0]], 
+                              [[-3 / 8., 0], [-1 / 8., 0], [1 / 8., 0], [3 / 8., 0]], 
+                              {(.25, 0) : t, (-.25, 0) : t})
+
+    def get_C2_transformation(self):
         n = 1/sqrt(2)
         return [[n,0,0,n],[0,n,n,0],[0,-n,n,0],[-n,0,0,n]]
 
@@ -151,3 +169,4 @@ class sq_dim(Superlattice):
 
     def get_symmetry_transformation(self):
         return [[1/sqrt(2), 1/sqrt(2)], [1/sqrt(2), -1/sqrt(2)]]
+"""

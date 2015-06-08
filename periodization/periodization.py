@@ -69,6 +69,12 @@ class ClusterPeriodization(object):
         self.sigma_lat_loc.name = '$\Sigma^{(lat,loc)}$'
         for s, b in self.sigma_lat_loc: b.name = '$\Sigma^{(lat,loc)}_{'+s+'}$'
 
+    def get_tr_sigma_lat(self):
+        return self.tr_sigma_lat
+
+    def set_tr_sigma_lat(self, sigma_lat):
+        self.tr_sigma_lat = _tr_g_lat(sigma_lat)
+
     def get_tr_g_lat_pade(self):
         return self.tr_g_lat_pade
 
@@ -259,7 +265,7 @@ class ClusterPeriodization(object):
         """
         makes a 2D plot of function_name: 'M_lat', 'Sigma_lat', 'G_lat' or 'Tr_G_lat' over the k vectors of the 1BZ
         """
-        assert function_name in ['M_lat', 'Sigma_lat', 'G_lat', 'Tr_G_lat'], 'invalid_function_name'
+        assert function_name in ['M_lat', 'Sigma_lat', 'G_lat', 'Tr_G_lat', 'Tr_Sigma_lat'], 'invalid_function_name'
         if function_name == 'M_lat': 
             pname = '$M_{lat,' + str(band) + '}$_' + str(spin)
             function = self.m_lat
@@ -275,6 +281,10 @@ class ClusterPeriodization(object):
         if function_name == 'Tr_G_lat': 
             pname = 'Tr$G_{lat}$'
             function = self.tr_g_lat
+            pplot2d_k_singleG(function, matsubara_freq, 0, self.bz_grid, self.n_kpts, **kwargs)
+        if function_name == 'Tr_Sigma_lat': 
+            pname = 'Tr$\Sigma_{lat}$'
+            function = self.tr_sigma_lat
             pplot2d_k_singleG(function, matsubara_freq, 0, self.bz_grid, self.n_kpts, **kwargs)
         if 'imaginary_part' in kwargs:
             if kwargs['imaginary_part'] == False:
@@ -305,6 +315,8 @@ class ClusterPeriodization(object):
         #    path_labels = ['$\Gamma$', 'X', 'W', 'K', 'L', '$\Gamma$']
         pp = PdfPages(filename)
         n_orbs = len(self.hopping.values()[0])
+        orbs = range(n_orbs)
+        cm = plt.cm.jet
         n_colors = max(1, n_orbs**2 - 1)
         plt.gca().set_color_cycle([plt.cm.jet(i/float(n_colors)) for i in range(n_orbs**2)])
         oplot(self.get_g_lat_loc()['up'], '-+', x_window = prange, RI = 'I')
@@ -327,12 +339,12 @@ class ClusterPeriodization(object):
         plt.close()
         if self.sym_path and self.sym_path_lbls:
             for p in self.sym_path:
-                self.plot('G_lat', p, 'up', (0, 0), '-+', x_window = prange)
+                for i in orbs: self.plot('G_lat', p, 'up', (0, i), '-+', x_window = prange, color = cm(i /float(n_orbs - 1)))
                 plt.gca().set_ylabel('$G_{lat}(i\omega_n)$')
                 pp.savefig()
                 plt.close()
             for p in self.sym_path:
-                self.plot('Sigma_lat', p,'up', (0, 0), '-+', x_window = prange)
+                for i in orbs: self.plot('Sigma_lat', p,'up', (0, i), '-+', x_window = prange, color = cm(i /float(n_orbs - 1)))
                 plt.gca().set_ylabel('$\Sigma_{lat}(i\omega_n)$')
                 pp.savefig()
                 plt.close()
@@ -346,7 +358,7 @@ class ClusterPeriodization(object):
             self.plot2d_k('Tr_G_lat', 0, imaginary_part = True)
             pp.savefig()
             plt.close()
-            self.plot2d_k('Sigma_lat', 0, 'up', 0, imaginary_part = True)
+            self.plot2d_k('Tr_Sigma_lat', 0, imaginary_part = True)
             pp.savefig()
             plt.close()
             self.plot2d_dos_k()
@@ -435,10 +447,10 @@ def pplot(f, k, block, index, bz_grid, *args, **kwargs):
     if 'name' in kwargs.keys():
         name = kwargs.pop('name')
     else:
-        name = str(index[0]) + '_' + str(block) + '_' + str(k)
-    for m in [('R', 'Re'), ('I', 'Im')]:
+        name = str(block) + str(index[0]) + str(index[1]) +  '_k' + str(k)
+    for m in [('R', 'Re','dashed'), ('I', 'Im','solid')]:
         name2 = m[1] + name
-        oplot(f[_k_ind(bz_grid, k)][block][index], name = name2, RI = m[0], *args, **kwargs)
+        oplot(f[_k_ind(bz_grid, k)][block][index], name = name2, RI = m[0], linestyle = m[2], marker = None, *args, **kwargs)
 
 def pplot2d_k(f, spin, matsubara_freq, band, bz_grid, n_kpts, imaginary_part = True, *args, **kwargs):
     """
