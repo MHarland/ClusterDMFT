@@ -31,6 +31,13 @@ class sq_sq(object):
     def get_g_transf_struct_orbital(self):
         return [[str(i)+'-'+s, [0]] for s in ['up', 'down'] for i in range(4)]
 
+    def get_g_transf_struct_site(self):
+        return [[str(i)+'-'+s, range(4)] for s in ['up', 'down'] for i in range(1)]
+
+    def get_transf_Z2(self):
+        x = 1/sqrt(2)
+        return [[x,0,x,0],[0,x,0,x],[x,0,-x,0],[0,x,0,-x]]
+
     def get_site_symmetries_afm(self):
         return [[(0,0),(3,3)],
                 [(1,1),(2,2)],
