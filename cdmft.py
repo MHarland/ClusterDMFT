@@ -76,7 +76,7 @@ class CDmft(ArchiveConnected):
         rnames = random_generator_names_list()
 
         for loop_nr in range(self.next_loop(), self.next_loop() + n_dmft_loops):       
-            if mpi.is_master_node(): mpi.report('DMFT-loop nr. %s'%loop_nr)
+            if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('DMFT-loop nr. %s'%loop_nr)
             if mpi.is_master_node(): duration = time()
 
             dmft.find_dmu(scheme, **clp)
@@ -168,7 +168,7 @@ class CDmft(ArchiveConnected):
                 else:
                     a_r['n_dmft_loops'] = 1
                 del a_l, a_r, a
-                mpi.report('')
+                if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('')
 
             mpi.barrier()
 
