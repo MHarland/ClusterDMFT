@@ -1,9 +1,7 @@
 from numpy import sqrt, cos, sin, pi
 from .superlatticetools import Superlattice
 
-class sq_sq(object):
-    """2by2 cluster in a square lattice"""
-
+class TwoByTwoClusterInSquarelattice(object):
     def __init__(self):
         pass
 
@@ -87,6 +85,19 @@ class sq_sq(object):
         n = 1/sqrt(2)
         print 'check transf!!! todo'
         return [[n,0,0,n],[0,n,n,0],[0,-n,n,0],[-n,0,0,n]]
+
+class CheckerboardNNNHopping(TwoByTwoClusterInSquarelattice):
+    def get_hopping(self, t = -1., tnnn = 0):
+        s = tnnn
+        return {(0,0):[[0,t,t,s],[t,0,s,t],[t,s,0,t],[s,t,t,0]],
+                (1,0):[[0,t,0,0],[0,0,0,0],[0,0,0,t],[0,0,0,0]],
+                (1,1):[[0,0,0,s],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+                (0,1):[[0,0,t,0],[0,0,0,t],[0,0,0,0],[0,0,0,0]],
+                (-1,1):[[0,0,0,0],[0,0,s,0],[0,0,0,0],[0,0,0,0]],
+                (-1,0):[[0,0,0,0],[t,0,0,0,],[0,0,0,0],[0,0,t,0]],
+                (-1,-1):[[0,0,0,0],[0,0,0,0],[0,0,0,0],[s,0,0,0]],
+                (0,-1):[[0,0,0,0],[0,0,0,0],[t,0,0,0],[0,t,0,0]],
+                (1,-1):[[0,0,0,0],[0,0,s,0],[0,0,0,0],[0,0,0,0]]}
 
 """
 class l_dim(Superlattice):
