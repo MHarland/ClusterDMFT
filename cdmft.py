@@ -18,6 +18,7 @@ from .lattice.superlatticetools import dispersion as energy_dispersion #remove s
 from .periodization.periodization import ClusterPeriodization
 from .plot import plot_from_archive, plot_of_loops_from_archive, checksym_plot, checktransf_plot, plot_ln_abs #move to dmftobjects?
 from .loop_parameters import CleanLoopParameters
+from .process_g import addExtField
 from .spectrum import get_spectrum #plot
 from .transformation.transformation import ClusterTransformationDMFT
 from .utility import get_site_nrs, get_dim, get_n_sites
@@ -84,6 +85,7 @@ class CDmft(ArchiveConnected):
             if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('dmu: %s'%dmu)
 
             g_c_iw << scheme.g_local(sigma_c_iw, dmu)
+            g_c_iw << addExtField(g_c_iw, p['ext_field'])
             if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(g_c_iw, p['archive'][0:-3] + 'Gchecksym' + str(loop_nr) + '.png')
             g_0_c_iw << inverse(inverse(g_c_iw) + sigma_c_iw)
 

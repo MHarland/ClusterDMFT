@@ -1,5 +1,5 @@
 from pytriqs.utility import mpi
-from pytriqs.gf.local import BlockGf
+from pytriqs.gf.local import BlockGf, inverse
 
 def clip_g(bg, threshold): # TODO tail consistency(?)
     if not type(bg) == BlockGf: return clip_block(bg, threshold)
@@ -92,3 +92,19 @@ class MixUpdate(object):
     def get_mix(self):
         return self.x
 
+def addExtField(g, field):
+    if field:
+        indices = list()
+        for s, b in g:
+            indices.append(s)
+        assert len(indices) == len(field), 'g and field must have same dimensions'
+        g = g.copy()
+        ginv = g.copy()
+        ginv << inverse(g)
+        #for s, b in ginv:
+        #    b << g[s].inverse()
+        for (s, b), si in zip(ginv, range(len(indices))):
+            for i in range(len(b.data[0,:,:])):
+                b[i,i] += field[si][i]
+        g << inverse(ginv)
+    return g

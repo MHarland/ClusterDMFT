@@ -29,6 +29,7 @@ class CleanLoopParameters(dict):
                                 'site_symmetries': False,
                                 'impose_paramagnetism': False,
                                 'g_transf_struct': False,
+                                'ext_field': None,
                                 'length_cycle': 50,
                                 'n_warmup_cycles': 5000,
                                 'random_seed': False,
