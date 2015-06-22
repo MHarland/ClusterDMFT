@@ -97,14 +97,11 @@ def addExtField(g, field):
         indices = list()
         for s, b in g:
             indices.append(s)
-        assert len(indices) == len(field), 'g and field must have same dimensions'
         g = g.copy()
         ginv = g.copy()
         ginv << inverse(g)
-        #for s, b in ginv:
-        #    b << g[s].inverse()
-        for (s, b), si in zip(ginv, range(len(indices))):
+        for s, b in ginv:
             for i in range(len(b.data[0,:,:])):
-                b[i,i] += field[si][i]
+                b[i,i] += field[s][i]
         g << inverse(ginv)
     return g
