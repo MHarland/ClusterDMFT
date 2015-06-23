@@ -11,5 +11,5 @@ for arch in sys.argv[1:]:
     occs = obs.occupation()
     for occ in occs:
         print 'n_'+str(occ[0][0])+'_'+str(occ[0][1])+': '+str(occ[1])
-    print 'n_total:'+str(obs.total_occupation())
+    print 'n_total: '+str(obs.total_occupation())
     print

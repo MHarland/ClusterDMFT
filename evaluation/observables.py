@@ -54,3 +54,19 @@ class Observables(object):
             for i in self.orbs:
                 occ += -b.data[-1, i, i]
         return occ
+
+    def charge_order(self, symClasses = [[],[]]):
+        if not self.gtau:
+            self.__set_g_tau()
+        occ = self.occupation()
+        assert len(self.blockNames) == 2, 'Gf\'s basis must be spins_sites'
+        nSites = len(occ)/2
+        trSpinOcc = [0] * nSites
+        for i in range(nSites):
+            trSpinOcc[i] += (occ[i][1] + occ[nSites+i][1]) * .5
+        trSpinSymOcc = [0, 0]
+        for i, symClass in enumerate(symClasses):
+            for el in symClass:
+                trSpinSymOcc[i] += trSpinOcc[el]
+            trSpinSymOcc[i] = trSpinSymOcc[i] /float(len(symClass))
+        return abs(trSpinSymOcc[1] - trSpinSymOcc[0])
