@@ -6,7 +6,7 @@ class CleanLoopParameters(dict):
     basically the parameters dictionary, but with additional functions that clean-up the parameters
     """
     _obligatory = ['archive', 'cluster_lattice', 'cluster', 'u_hubbard', 't', 'beta', 'n_cycles', 'mu', 'n_kpts']
-    _cthyb_keys = ['n_cycles', 'length_cycle', 'n_warmup_cycles', 'random_seed', 'random_name', 'max_time', 'verbosity', 'use_trace_estimator', 'measure_g_tau', 'measure_g_l', 'measure_pert_order', 'make_histograms', 'move_shift', 'move_double']
+    _cthyb_keys = ['n_cycles', 'length_cycle', 'n_warmup_cycles', 'random_seed', 'random_name', 'max_time', 'verbosity', 'use_trace_estimator', 'measure_g_tau', 'measure_g_l', 'measure_pert_order', 'move_shift', 'move_double']
     _replenishing_parameters = {'cluster_density': False,
                                 'verbosity': 1,
                                 'scheme': 'cellular_dmft',
@@ -40,8 +40,7 @@ class CleanLoopParameters(dict):
                                 'measure_g_l': True,
                                 'measure_pert_order': True,
                                 'move_shift': True,
-                                'move_double': True,
-                                'make_histograms': False
+                                'move_double': True
                                 }
 
     def __init__(self, *args, **kwargs):
@@ -53,7 +52,7 @@ class CleanLoopParameters(dict):
         
     def get_cthyb_parameters(self):
         cthyb = dict()
-        for key in _cthyb_keys: cthyb.update({key: self[key]})
+        for key in CleanLoopParameters._cthyb_keys: cthyb.update({key: self[key]})
         if cthyb['verbosity'] == 1: cthyb['verbosity'] += 1
         return cthyb
 
