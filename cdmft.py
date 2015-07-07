@@ -100,7 +100,7 @@ class CDmft(ArchiveConnected):
             if not clp['random_name']: clp.update({'random_name': rnames[int((loop_nr + mpi.rank) % len(rnames))]})
             if not clp['random_seed']: clp.update({'random_seed': 862379 * mpi.rank + 12563 * self.next_loop()})
             impurity.G0_iw << transf.get_g_0_iw()
-            impurity.solve(h_loc = transf.get_hamiltonian(), **clp.get_cthyb_parameters())
+            impurity.solve(h_int = transf.get_hamiltonian(), **clp.get_cthyb_parameters())
             if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(inverse(impurity.G0_iw), p['archive'][0:-3] + 'invGweisscheckconstsolver' + str(loop_nr) + '.png')
             if clp['measure_g_l']:
                 for ind, g in transf.get_g_iw(): g  << LegendreToMatsubara(impurity.G_l[ind])
