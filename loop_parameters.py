@@ -13,7 +13,7 @@ class CleanLoopParameters(dict):
                                 'transformation': False,
                                 'density': False,
                                 'g_transf_struct': False,
-                                'sigma_iw': False,
+                                'sigma_c_iw': False,
                                 'dmu': False,
                                 'spins': ['up', 'down'],
                                 'mu': 0,
