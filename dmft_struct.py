@@ -23,7 +23,7 @@ class DMFTObjects(ArchiveConnected):
             self.sigma_iw = self.load('sigma_c_iw')
         else:
             self.sigma_iw.zero()
-        if dmu:
+        if dmu or dmu == 0:
             self.dmu = dmu
         elif self.next_loop() > 0:
             self.dmu = self.load('dmu')
