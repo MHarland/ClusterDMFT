@@ -55,6 +55,25 @@ class Observables(object):
                 occ += -b.data[-1, i, i]
         return occ
 
+    def dosAtFermiLevel(self):
+        """returns a list of pairs, of which the first entry is again a pair of blockname, orbital"""
+        dos = list()
+        if not self.gtau:
+            self.__set_g_tau()
+        for s, b in self.gtau:
+            for i in self.orbs:
+                dos.append([[s, i], -1 * b.beta * b.data[int(len(b.data[:, 0, 0])*.5)+1, i, i]])
+        return dos
+
+    def totDosAtFermiLevel(self):
+        dos = 0
+        if not self.gtau:
+            self.__set_g_tau()
+        for s, b in self.gtau:
+            for i in self.orbs:
+                dos += -1 * b.beta * b.data[int(len(b.data[:, 0, 0])*.5)+1, i, i]
+        return dos
+
     def charge_order(self, symClasses = [[],[]]):
         if not self.gtau:
             self.__set_g_tau()
