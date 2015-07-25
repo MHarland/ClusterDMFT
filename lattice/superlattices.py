@@ -1,4 +1,4 @@
-from numpy import sqrt, cos, sin, pi
+from numpy import sqrt, cos, sin, pi, array
 from .superlatticetools import Superlattice
 
 class TwoByTwoClusterInSquarelattice(object):
@@ -25,6 +25,14 @@ class TwoByTwoClusterInSquarelattice(object):
 
     def get_transf_orbital(self):
         return [[0.5, 0.5, 0.5, 0.5], [0.5, 0.5, -0.5, -0.5], [0.5, -0.5, 0.5, -0.5], [0.5, -0.5, -0.5, 0.5]]
+
+    def get_transf_C4(self, theta):
+        x = .5
+        phi1 = array([-x,0,0,x])
+        phi2 = array([0,-x,x,0])
+        phi1p = cos(theta) * phi1 - sin(theta) * phi2
+        phi2p = sin(theta) * phi1 + cos(theta) * phi2
+        return [[x]*4,list(phi1p),list(phi2p),[x,-x,-x,x]]
 
     def get_g_transf_struct_orbital(self):
         return [[str(i)+'-'+s, [0]] for s in ['up', 'down'] for i in range(4)]
