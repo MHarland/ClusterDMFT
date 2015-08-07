@@ -9,4 +9,4 @@ for n, arch in enumerate(sys.argv[1:]):
     plt.scatter(range(len(s)), s, label = arch[0:-3], color = cm.jet(n /float(len(sys.argv[1:]))))
 
 plt.legend(loc = 2)
-plt.savefig('spectrum.png', dpi = 300)
+plt.savefig('spectrum.pdf', dpi = 300)

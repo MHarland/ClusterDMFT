@@ -156,6 +156,7 @@ class CDmft(ArchiveConnected):
                 a_l['density'] = density
                 a_l['sign'] = impurity.average_sign
                 a_l['spectrum'] = get_spectrum(impurity)
+                a_l['eigensystems'] = impurity.eigensystems
                 a_l['loop_time'] = {'seconds': time() - duration,
                                     'hours': (time() - duration)/3600., 
                                     'days': (time() - duration)/3600./24.}
