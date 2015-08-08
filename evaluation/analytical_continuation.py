@@ -3,17 +3,11 @@ from pytriqs.gf.local import BlockGf, GfImFreq, GfReFreq
 
 def pade_tr(blockgf_iw, pade_n_omega_n, pade_eta, dos_n_points, dos_window, clip_threshold=0, n_points=1200):
     g_iw = blockgf_iw
-    tr_spin_g = GfImFreq(indices = range(len(g_iw['up'].data[0, :, :])), mesh = g_iw.mesh)
-    tr_spin_g << g_iw['up'] + g_iw['down']
-    tr_band_g = GfImFreq(indices = [0], mesh = g_iw.mesh)
-    tr_band_g.zero()
-    _temp = tr_band_g.copy()
-    for i in range(len(tr_spin_g.data[0, :, :])):
-        tr_band_g << _temp + tr_spin_g[i, i]
-        _temp << tr_band_g
-    del _temp
-
-    tr_g = tr_band_g
+    indices = [ind for ind in g_iw.indices]
+    tr_g = GfImFreq(indices = [0], mesh = g_iw[indices[0]].mesh)
+    for s, b in g_iw:
+        for i in range(len(b.data[0, :, :])):
+            tr_g << tr_g + b[i, i]
     tr_g_lat_pade = GfReFreq(indices = [0], window = dos_window,
                              n_points = dos_n_points, name = 'Tr$G_{lat}$')
     tr_g_lat_pade.set_from_pade(clip_g(tr_g, clip_threshold), n_points = pade_n_omega_n,
