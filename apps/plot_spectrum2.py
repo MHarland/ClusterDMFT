@@ -18,11 +18,14 @@ for n, arch in enumerate(sys.argv[1:]):
         i += 1
     g_e = array(g_e)
     fig, ax = plt.subplots()
-    ax.scatter(g_e[:, 0], g_e[:, 1], marker = '+')
+    for pt in g_e:
+        ax.plot([pt[0]]*2, [0, pt[1]], color = 'blue')
     ax.set_xlabel('$\omega$')
     ax.set_ylabel('degeneracy')
-    ax.set_xlim(min(g_e[:, 0]) - .1*max(g_e[:, 0]), max(g_e[:, 0]) * 1.1)
-    ax.set_ylim(min(g_e[:, 1]) - .1*max(g_e[:, 1]), max(g_e[:, 1]) * 1.1)
+    ax.set_xlim(min(g_e[:, 0]) - .05*max(g_e[:, 0]), max(g_e[:, 0]) * 1.05)
+    ax.set_ylim(0, max(g_e[:, 1]) * 1.05)
     plt.tight_layout()
-    plt.savefig(arch[:-3]+'_spec.pdf', dpi = 300)
+    filename = arch[:-3]+'_spec.pdf'
+    plt.savefig(filename, dpi = 300)
     plt.close()
+    print filename+' ready'
