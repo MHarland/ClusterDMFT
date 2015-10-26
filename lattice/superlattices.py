@@ -107,6 +107,22 @@ class CheckerboardNNNHopping(TwoByTwoClusterInSquarelattice):
                 (0,-1):[[0,0,0,0],[0,0,0,0],[t,0,0,0],[0,t,0,0]],
                 (1,-1):[[0,0,0,0],[0,0,s,0],[0,0,0,0],[0,0,0,0]]}
 
+class SquareclusterIntegration(TwoByTwoClusterInSquarelattice):
+    def get_hopping(self, t = -1., tnnn = 0, alpha = 0, alpha_prime = 0):
+        s = tnnn
+        h = {(0,0):[[0,t,t,s],[t,0,s,t],[t,s,0,t],[s,t,t,0]]}
+        t = alpha * t
+        s = alpha_prime * s
+        h.update({(1,0):[[0,t,0,s],[0,0,0,0],[0,s,0,t],[0,0,0,0]],
+                  (1,1):[[0,0,0,s],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+                  (0,1):[[0,0,t,s],[0,0,s,t],[0,0,0,0],[0,0,0,0]],
+                  (-1,1):[[0,0,0,0],[0,0,s,0],[0,0,0,0],[0,0,0,0]],
+                  (-1,0):[[0,0,0,0],[t,0,s,0,],[0,0,0,0],[s,0,t,0]],
+                  (-1,-1):[[0,0,0,0],[0,0,0,0],[0,0,0,0],[s,0,0,0]],
+                  (0,-1):[[0,0,0,0],[0,0,0,0],[t,s,0,0],[s,t,0,0]],
+                  (1,-1):[[0,0,0,0],[0,0,s,0],[0,0,0,0],[0,0,0,0]]})
+        return h
+
 class pyrochlore(object):
     def __init__(self):
         pass
