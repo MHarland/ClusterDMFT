@@ -277,7 +277,7 @@ class CDmft(ArchiveConnected):
             plot_of_loops_from_archive(p['archive'], f, marker = '+')
             pp.savefig()
             plt.close()
-
+        """
         arch_text = self.archive_content(group = ['results', str(self.last_loop())], dont_exp = ['bz_grid', 'bz_weights', 'eps', 'rbz_grid'])
         line = 1
         page_text = str()
@@ -291,7 +291,7 @@ class CDmft(ArchiveConnected):
                 plt.close()
                 page_text = str()
                 line = 1
-
+        """
         pp.close()
         print filename, 'ready'
 
