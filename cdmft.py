@@ -157,7 +157,7 @@ class CDmft(ArchiveConnected):
                 a_l['sign'] = impurity.average_sign
                 a_l['spectrum'] = get_spectrum(impurity)
                 a_l['eigensystems'] = impurity.eigensystems
-                a_l['state_trace_contribs'] = impurity.state_trace_contribs
+                if clp['state_trace_contribs']: a_l['state_trace_contribs'] = impurity.state_trace_contribs
                 a_l['g_atomic_tau'] = impurity.atomic_gf
                 a_l['loop_time'] = {'seconds': time() - duration,
                                     'hours': (time() - duration)/3600., 
