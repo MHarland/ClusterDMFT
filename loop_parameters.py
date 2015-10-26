@@ -40,7 +40,7 @@ class CleanLoopParameters(dict):
                                 'measure_pert_order': True,
                                 'move_shift': True,
                                 'move_double': True,
-                                'measure_state_trace_contrib': False
+                                'measure_state_trace_contrib': True
                                 }
 
     def __init__(self, *args, **kwargs):
