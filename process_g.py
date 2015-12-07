@@ -1,5 +1,6 @@
 from pytriqs.utility import mpi
 from pytriqs.gf.local import BlockGf, inverse
+from itertools import product
 
 def clip_g(bg, threshold): # TODO tail consistency(?)
     if not type(bg) == BlockGf: return clip_block(bg, threshold)
@@ -75,12 +76,14 @@ def impose_paramagnetism(g):
     return g_s
 
 def impose_afm(g):
-    """written for afm on 4 site sublattice (0,3) and (1,2)"""
+    """written for afm on 4 site sublattice (0,3) and (1,2); imposes only on local entries"""
     sA = [0,3]
     sB = [1,2]
-    g_s = g.copy()
     spins = [s for s in g.indices]
-    g_s.zero()
+    g_s = g.copy()
+    for s, b in g_s:
+        for i in range(4):
+            b[i, i] << 0
     for s1, b1 in g:
         for i, j in product(range(4), range(4)):
             if (i in sA and j in sA) or (i in sB and j in sB):
