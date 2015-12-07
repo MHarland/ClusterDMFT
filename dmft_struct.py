@@ -1,7 +1,7 @@
 from pytriqs.gf.local import BlockGf, GfImFreq
 from pytriqs.utility.dichotomy import dichotomy
 from .archive import ArchiveConnected
-from .process_g import impose_site_symmetries, impose_paramagnetism, MixUpdate
+from .process_g import impose_site_symmetries, impose_paramagnetism, MixUpdate, impose_afm
 
 class DMFTObjects(ArchiveConnected):
     """
@@ -38,6 +38,11 @@ class DMFTObjects(ArchiveConnected):
         """makes g, sigma and g0 paramagnetic by averaging"""
         for g in [self.g_iw, self.sigma_iw, self. g_0_iw]:
             g << impose_paramagnetism(g)
+
+    def afm(self):
+        """makes g, sigma and g0 paramagnetic by averaging"""
+        for g in [self.g_iw, self.sigma_iw, self. g_0_iw]:
+            g << impose_afm(g)
 
     def site_symmetric(self, site_symmetries):
         """makes g, sigma and g0 site symmetric by averaging according to site_symmetries"""

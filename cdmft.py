@@ -126,6 +126,7 @@ class CDmft(ArchiveConnected):
 
             if clp['mix']: dmft.mix()
             if clp['impose_paramagnetism']: dmft.paramagnetic()
+            if clp['impose_afm']: dmft.afm()
             if clp['site_symmetries']: dmft.site_symmetric(clp['site_symmetries'])
             density = dmft.get_g_iw().total_density()
             if mpi.is_master_node() and clp['verbosity'] > 0: mpi.report('Density per cluster: ' + str(density))

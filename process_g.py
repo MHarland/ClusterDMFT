@@ -74,6 +74,25 @@ def impose_paramagnetism(g):
             g_s[s1] += g[s2] * .5
     return g_s
 
+def impose_afm(g):
+    """written for afm on 4 site sublattice (0,3) and (1,2)"""
+    sA = [0,3]
+    sB = [1,2]
+    g_s = g.copy()
+    spins = [s for s in g.indices]
+    g_s.zero()
+    for s1, b1 in g:
+        for i, j in product(range(4), range(4)):
+            if (i in sA and j in sA) or (i in sB and j in sB):
+                s2 = s1
+            else:
+                for s in spins:
+                    if s != s1:
+                        s2 = s
+                        break
+            g_s[s1][i, i] += g[s2][j, j] * .25
+    return g_s
+
 class MixUpdate(object):
     def __init__(self, g, mu, x):
         self.g_old = g.copy()
