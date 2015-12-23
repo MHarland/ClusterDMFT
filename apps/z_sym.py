@@ -1,9 +1,9 @@
 #!/usr/bin/env pytriqs
-from cdmft.cdmft import CDmft
+from ClusterDMFT.cdmft import CDmft
 from pytriqs.gf.local import BlockGf
 from pytriqs.archive import HDFArchive
-from cdmft.evaluation.quasiparticle import get_quasiparticle_residue
-from cdmft.transformation.gf import g_sym
+from ClusterDMFT.evaluation.quasiparticle import get_quasiparticle_residue
+from ClusterDMFT.transformation.gf import g_sym
 from numpy import array
 import sys
 

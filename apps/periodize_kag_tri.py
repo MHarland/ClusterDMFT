@@ -1,8 +1,8 @@
 #!/usr/bin/env pytriqs
 from numpy import sin, cos, pi
-from cdmft.cellular_dmft import CDmft
-from cdmft.periodization import Periodization
-from cdmft.lattice.superlattices import kag_tri
+from ClusterDMFT.cellular_dmft import CDmft
+from ClusterDMFT.periodization import Periodization
+from ClusterDMFT.lattice.superlattices import kag_tri
 import sys
 
 lat = kag_tri()

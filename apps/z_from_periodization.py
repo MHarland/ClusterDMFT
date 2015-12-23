@@ -1,7 +1,7 @@
 #!/usr/bin/env pytriqs
-from cdmft.periodization.periodization import PeriodizationBase as Periodization
+from ClusterDMFT.periodization.periodization import PeriodizationBase as Periodization
 from pytriqs.gf.local import BlockGf
-from cdmft.evaluation.quasiparticle import get_quasiparticle_residue
+from ClusterDMFT.evaluation.quasiparticle import get_quasiparticle_residue
 import sys
 
 for n, arch in enumerate(sys.argv[1:]):

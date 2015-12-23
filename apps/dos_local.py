@@ -1,5 +1,5 @@
 #!/usr/bin/env pytriqs
-from cdmft.periodization import Periodization
+from ClusterDMFT.periodization import Periodization
 from matplotlib import pyplot as plt, cm
 import sys
 

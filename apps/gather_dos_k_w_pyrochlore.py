@@ -1,7 +1,7 @@
 #!/usr/bin/env pytriqs
 import sys
 from numpy import array, save, empty
-from cdmft.periodization.periodization import PeriodizationBase as Periodization, g_k_to_imshow_data
+from ClusterDMFT.periodization.periodization import PeriodizationBase as Periodization, g_k_to_imshow_data
 
 path = [[0,0,0],[.5,0,.5],[.5,.25,.75],[3/8.,3/8.,.75],[.5,.5,.5],[0,0,0]]
 path_labels = ['$\Gamma$', 'X', 'W', 'K', 'L', '$\Gamma$']

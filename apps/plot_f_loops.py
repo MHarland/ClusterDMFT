@@ -1,5 +1,5 @@
 #!/usr/bin/env pytriqs
-from cdmft.cdmft import CDmft
+from ClusterDMFT.cdmft import CDmft
 from pytriqs.plot.mpl_interface import oplot
 from matplotlib import pyplot as plt
 import sys

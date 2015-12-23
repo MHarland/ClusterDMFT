@@ -1,6 +1,6 @@
 #!/usr/bin/env pytriqs
-from cdmft.cellular_dmft import CDmft
-from cdmft.periodization import Periodization
+from ClusterDMFT.cellular_dmft import CDmft
+from ClusterDMFT.periodization import Periodization
 from numpy import sqrt
 import sys
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env pytriqs
-from cdmft.cdmft import CDmft
+from ClusterDMFT.cdmft import CDmft
 import sys
 from matplotlib import pyplot as plt, cm
 from numpy.linalg import eigvals

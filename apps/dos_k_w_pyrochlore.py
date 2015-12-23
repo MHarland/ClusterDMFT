@@ -1,7 +1,7 @@
 #!/usr/bin/env pytriqs
 import sys
 from numpy import array
-from cdmft.periodization.periodization import PeriodizationBase as Periodization, g_k_to_imshow_data
+from ClusterDMFT.periodization.periodization import PeriodizationBase as Periodization, g_k_to_imshow_data
 from matplotlib import pyplot as plt, cm
 
 rows = int(sys.argv[1])

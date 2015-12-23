@@ -1,6 +1,6 @@
 #!/usr/bin/env pytriqs
-from cdmft.cdmft import CDmft
-from cdmft.evaluation.analytical_continuation import pade_tr as pade
+from ClusterDMFT.cdmft import CDmft
+from ClusterDMFT.evaluation.analytical_continuation import pade_tr as pade
 from pytriqs.gf.local import BlockGf, GfImFreq, GfReFreq
 from pytriqs.plot.mpl_interface import oplot
 from numpy import pi

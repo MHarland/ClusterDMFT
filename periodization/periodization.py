@@ -145,14 +145,13 @@ class ClusterPeriodization(object):
                     for r in val.keys():
                         self.__dict__[key].update({val[r]['R'] : val[r]['h']})
                 elif a_p.is_group(key):
-                    if type(val) == BlockGf:
+                    if key in ['g_lat_loc', 'sigma_lat_loc']:
                         self.__dict__[key] = val
-                    elif type(val) == dict:
-                        if key != 'hopping':
-                            self.__dict__[key] = dict()
-                            self.__dict__[key].update(val)
-                        else:
-                            pass
+                    elif type(val) == GfReFreq:
+                        self.__dict__[key] = val
+                    elif type(val) == dict and key != 'hopping':
+                        self.__dict__[key] = dict()
+                        self.__dict__[key].update(val)
                     elif type(val) == tuple:
                         self.__dict__[key] = list()
                         for v in val:

@@ -1,6 +1,6 @@
 #!/usr/bin/env pytriqs
-from cdmft.cdmft import CDmft
-from cdmft.evaluation.observables import Observables
+from ClusterDMFT.cdmft import CDmft
+from ClusterDMFT.evaluation.observables import Observables
 import sys
 
 for arch in sys.argv[1:]:

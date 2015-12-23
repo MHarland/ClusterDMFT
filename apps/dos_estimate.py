@@ -1,5 +1,5 @@
 #!/usr/bin/env pytriqs
-from cdmft.cdmft import CDmft
+from ClusterDMFT.cdmft import CDmft
 from pytriqs.gf.local import BlockGf, GfImFreq, GfImTime
 from numpy import array, savetxt, pi
 import sys

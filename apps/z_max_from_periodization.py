@@ -1,7 +1,7 @@
 #!/usr/bin/env pytriqs
-from cdmft.periodization.periodization import PeriodizationBase as Periodization
+from ClusterDMFT.periodization.periodization import PeriodizationBase as Periodization
 from pytriqs.gf.local import BlockGf
-from cdmft.evaluation.quasiparticle import get_quasiparticle_residue
+from ClusterDMFT.evaluation.quasiparticle import get_quasiparticle_residue
 from numpy import array
 from itertools import izip
 import sys
