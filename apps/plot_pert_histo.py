@@ -17,4 +17,4 @@ for n, filename in enumerate(sys.argv[1:]):
 
 plt.gca().set_xlim(0, max_plot_order)
 plt.legend()
-plt.savefig('pert_histo.png', dpi = 300)
+plt.savefig('pert_histo.pdf', dpi = 300)

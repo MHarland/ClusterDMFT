@@ -199,17 +199,31 @@ class pyrochlore(object):
     def get_g_transf_struct_site(self):
         return [[str(i)+'-'+s, range(4)] for s in ['up', 'down'] for i in range(1)]
 
-"""
+
 class l_dim(Superlattice):
-    def __init__(self, t = -1.):
-        Superlattice.__init__(self,
-                              [[2, 0, 0], [0, 200, 0]], 
-                              [[-.25, 0], [.25, 0]], 
-                              {(.5, 0) : t, (-.5, 0) : t})
+    def __init__(self):
+        pass
+
+    def get_hopping(self, t = -1):
+        return {(1, 0) : [[0,t],[0,0]], (-1, 0) : [[0,0],[t,0]]}
 
     def get_symmetry_transformation(self):
         return [[1/sqrt(2), 1/sqrt(2)], [1/sqrt(2), -1/sqrt(2)]]
 
+    def get_cartesian_clusterlatticevectors(self):
+        return [[1, 0, 0], [0, 1, 0]]
+
+    def get_clusterlatticebasis(self):
+        return [[0, 0], [.5, 0]]
+
+    def get_g_transf_struct_orbital(self):
+        return [[str(i)+'-'+s, [0]] for s in ['up', 'down'] for i in range(2)]
+
+    def get_g_transf_struct_site(self):
+        return [[str(i)+'-'+s, range(2)] for s in ['up', 'down'] for i in range(1)]
+
+
+"""
 class l_3s(Superlattice):
     def __init__(self, t = -1.):
         Superlattice.__init__(self,

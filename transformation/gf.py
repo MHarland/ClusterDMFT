@@ -1,3 +1,4 @@
+# TODO delete(?)
 from numpy import array, zeros
 from pytriqs.gf.local import BlockGf, GfImFreq
 

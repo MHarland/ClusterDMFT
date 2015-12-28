@@ -19,7 +19,6 @@ from .periodization.periodization import ClusterPeriodization
 from .plot import plot_from_archive, plot_of_loops_from_archive, checksym_plot, checktransf_plot, plot_ln_abs #move to dmftobjects?
 from .loop_parameters import CleanLoopParameters
 from .process_g import addExtField
-from .spectrum import get_spectrum #plot
 from .transformation.transformation import ClusterTransformationDMFT
 from .utility import get_site_nrs, get_dim, get_n_sites
 
@@ -86,22 +85,22 @@ class CDmft(ArchiveConnected):
 
             g_c_iw << scheme.g_local(sigma_c_iw, dmu)
             g_c_iw << addExtField(g_c_iw, p['ext_field'])
-            if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(g_c_iw, p['archive'][0:-3] + 'Gchecksym' + str(loop_nr) + '.png')
+            if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(g_c_iw, p['archive'][0:-3] + 'Gchecksym' + str(loop_nr) + '.pdf')
             g_0_c_iw << inverse(inverse(g_c_iw) + sigma_c_iw)
 
             transf.set_dmft_objs(inverse(sigma_c_iw + inverse(g_c_iw)), g_c_iw, sigma_c_iw)
             if mpi.is_master_node() and p['verbosity'] > 1: 
-                checktransf_plot(transf.get_g_iw(), p['archive'][0:-3] + 'Gchecktransf' + str(loop_nr) + '.png')
-                checktransf_plot(g_0_iw, p['archive'][0:-3] + 'Gweisscheck' + str(loop_nr) + '.png')
-                checksym_plot(inverse(g_0_iw), p['archive'][0:-3] + 'invGweisscheckconst' + str(loop_nr) + '.png')
-                checksym_plot(inverse(transf.get_g_iw()), p['archive'][0:-3] + 'invGsymcheckconst' + str(loop_nr) + '.png')
+                checktransf_plot(transf.get_g_iw(), p['archive'][0:-3] + 'Gchecktransf' + str(loop_nr) + '.pdf')
+                checktransf_plot(g_0_c_iw, p['archive'][0:-3] + 'Gweisscheck' + str(loop_nr) + '.pdf')
+                checksym_plot(inverse(g_0_c_iw), p['archive'][0:-3] + 'invGweisscheckconst' + str(loop_nr) + '.pdf')
+                checksym_plot(inverse(transf.get_g_iw()), p['archive'][0:-3] + 'invGsymcheckconst' + str(loop_nr) + '.pdf')
 
                 if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('impurity:')
             if not clp['random_name']: clp.update({'random_name': rnames[int((loop_nr + mpi.rank) % len(rnames))]})
             if not clp['random_seed']: clp.update({'random_seed': 862379 * mpi.rank + 12563 * self.next_loop()})
             impurity.G0_iw << transf.get_g_0_iw()
             impurity.solve(h_int = transf.get_hamiltonian(), **clp.get_cthyb_parameters())
-            if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(inverse(impurity.G0_iw), p['archive'][0:-3] + 'invGweisscheckconstsolver' + str(loop_nr) + '.png')
+            if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(inverse(impurity.G0_iw), p['archive'][0:-3] + 'invGweisscheckconstsolver' + str(loop_nr) + '.pdf')
             if clp['measure_g_l']:
                 for ind, g in transf.get_g_iw(): g  << LegendreToMatsubara(impurity.G_l[ind])
             else:
@@ -116,7 +115,7 @@ class CDmft(ArchiveConnected):
                     fixed_moments = TailGf(len(block_inds), len(block_inds), 1, 1)
                     fixed_moments[1] = identity(len(block_inds))
                     g.fit_tail(fixed_moments, 8, clp['tail_start'], clp['n_iw'] - 1)
-            if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(inverse(transf.get_g_iw()), p['archive'][0:-3] + 'invGsymcheckconstsolver' + str(loop_nr) + '.png')
+            if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(inverse(transf.get_g_iw()), p['archive'][0:-3] + 'invGsymcheckconstsolver' + str(loop_nr) + '.pdf')
 
             transf.set_sigma_iw(inverse(transf.get_g_0_iw()) - inverse(transf.get_g_iw()))
             dmft.set_dmft_objs(*transf.get_backtransformed_dmft_objs())
@@ -156,15 +155,14 @@ class CDmft(ArchiveConnected):
                 a_l['dmu'] = dmft.get_dmu()
                 a_l['density'] = density
                 a_l['sign'] = impurity.average_sign
-                a_l['spectrum'] = get_spectrum(impurity)
-                a_l['eigensystems'] = impurity.eigensystems
-                if clp['measure_state_trace_contrib']: a_l['state_trace_contribs'] = impurity.state_trace_contribs
+                #if clp['measure_density_matrix']: a_l['density_matrix'] = impurity.state_trace_contribs
                 a_l['g_atomic_tau'] = impurity.atomic_gf
                 a_l['loop_time'] = {'seconds': time() - duration,
                                     'hours': (time() - duration)/3600., 
                                     'days': (time() - duration)/3600./24.}
                 a_l['n_cpu'] = mpi.size
                 a_l['cdmft_code_version'] = CDmft._version
+                a_l['local'] = impurity.h_loc_diagonalization
                 clp_dict = dict()
                 clp_dict.update(clp)
                 a_l['parameters'] = clp_dict
@@ -306,7 +304,7 @@ class CDmft(ArchiveConnected):
         if 'filename' in kwargs.keys():
             filename = kwargs['filename']
         else:
-            filename = function + '.png'
+            filename = function + '.pdf'
         plot_from_archive(self.parameters['archive'], function, *args, **kwargs)
         plt.savefig(filename)
         plt.close()
@@ -324,7 +322,7 @@ class CDmft(ArchiveConnected):
         if 'filename' in kwargs.keys():
             filename = kwargs['filename']
         else:
-            filename = function + '.png'
+            filename = function + '.pdf'
         plot_of_loops_from_archive(self.parameters['archive'], function, *args, **kwargs)
         plt.savefig(filename)
         plt.close()
