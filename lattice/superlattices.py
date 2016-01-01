@@ -205,10 +205,11 @@ class l_dim(Superlattice):
         pass
 
     def get_hopping(self, t = -1):
-        return {(1, 0) : [[0,t],[0,0]], (-1, 0) : [[0,0],[t,0]]}
+        return {(0, 0) : [[0,t],[t,0]], (1, 0) : [[0,t],[0,0]], (-1, 0) : [[0,0],[t,0]]}
 
     def get_symmetry_transformation(self):
-        return [[1/sqrt(2), 1/sqrt(2)], [1/sqrt(2), -1/sqrt(2)]]
+        x = 1/sqrt(2)
+        return [[x, x], [x, -x]]
 
     def get_cartesian_clusterlatticevectors(self):
         return [[1, 0, 0], [0, 1, 0]]

@@ -19,7 +19,7 @@ from .periodization.periodization import ClusterPeriodization
 from .plot import plot_from_archive, plot_of_loops_from_archive, checksym_plot, checktransf_plot, plot_ln_abs #move to dmftobjects?
 from .loop_parameters import CleanLoopParameters
 from .process_g import addExtField
-from .transformation.transformation import ClusterTransformationDMFT
+from .transformation.sites import ClustersiteTransformation
 from .utility import get_site_nrs, get_dim, get_n_sites
 
 class CDmft(ArchiveConnected):
@@ -65,9 +65,9 @@ class CDmft(ArchiveConnected):
         dmft = DMFTObjects(**clp)
         raw_dmft = DMFTObjects(**clp)
         g_c_iw, sigma_c_iw, g_0_c_iw, dmu = dmft.get_dmft_objs()
-        transf = ClusterTransformationDMFT(g_loc = scheme.g_local(sigma_c_iw, dmu), **clp)
+        transf = ClustersiteTransformation(g_loc = scheme.g_local(sigma_c_iw, dmu), **clp)
         clp.update({'g_transf_struct': transf.get_g_struct()})
-        raw_transf = ClusterTransformationDMFT(**clp)
+        raw_transf = ClustersiteTransformation(**clp)
         transf.set_hamiltonian(**clp)
         if p['verbosity'] > 0: mpi.report('New basis:', transf.get_g_struct())
         impurity = Solver(beta = clp['beta'], gf_struct = dict(transf.get_g_struct()), 
@@ -95,12 +95,13 @@ class CDmft(ArchiveConnected):
                 checksym_plot(inverse(g_0_c_iw), p['archive'][0:-3] + 'invGweisscheckconst' + str(loop_nr) + '.pdf')
                 checksym_plot(inverse(transf.get_g_iw()), p['archive'][0:-3] + 'invGsymcheckconst' + str(loop_nr) + '.pdf')
 
-                if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('impurity:')
             if not clp['random_name']: clp.update({'random_name': rnames[int((loop_nr + mpi.rank) % len(rnames))]})
             if not clp['random_seed']: clp.update({'random_seed': 862379 * mpi.rank + 12563 * self.next_loop()})
             impurity.G0_iw << transf.get_g_0_iw()
             impurity.solve(h_int = transf.get_hamiltonian(), **clp.get_cthyb_parameters())
-            if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(inverse(impurity.G0_iw), p['archive'][0:-3] + 'invGweisscheckconstsolver' + str(loop_nr) + '.pdf')
+            if mpi.is_master_node() and p['verbosity'] > 1: 
+                checksym_plot(inverse(impurity.G0_iw), p['archive'][0:-3] + 'invGweisscheckconstsolver' + str(loop_nr) + '.pdf')
+
             if clp['measure_g_l']:
                 for ind, g in transf.get_g_iw(): g  << LegendreToMatsubara(impurity.G_l[ind])
             else:

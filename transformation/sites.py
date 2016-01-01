@@ -1,3 +1,4 @@
+from itertools import product
 from numpy import array, identity, dot, zeros
 from numpy.linalg import inv as inverse
 from pytriqs.gf.local import BlockGf, GfImFreq
@@ -6,7 +7,7 @@ from pytriqs.operators import c as C, c_dag as C_dag
 from .u_matrix import CoulombTensor, NNCoulombTensor
 from .other import sum_list, m_transform
 
-class ClusterTransformation():
+class ClustersiteTransformation():
     """
     transforms the cluster objects required for the impurity problem within cdmft
     for the 1-orbital Hubbard model
@@ -58,21 +59,11 @@ class ClusterTransformation():
         sites = range(dim)
         mu_matrix = - mu * identity(dim)
         self.hamiltonian = sum_list([sum_list([sum_list([self._unblocked_c_dag(s, i) * m_transform(mu_matrix, u, i, j) * self._unblocked_c(s, j) for j in sites]) for i in sites]) for s in self.spins])
-        for s1 in self.spins:
-            for s2 in self.spins:
-                for i in sites:
-                    for j in sites:
-                        for k in sites:
-                            for l in sites:
-                                self.hamiltonian += u_c_transf[i, j, k, l, s1, s2] * self._unblocked_c_dag(s1, i) * self._unblocked_c_dag(s2, j) *  self._unblocked_c(s2, l) * self._unblocked_c(s1, k)
+        for i, j, k, l, s1, s2 in product(*[sites]*4 + [self.spins]*2):
+            self.hamiltonian += u_c_transf[i, j, k, l, s1, s2] * self._unblocked_c_dag(s1, i) * self._unblocked_c_dag(s2, j) *  self._unblocked_c(s2, l) * self._unblocked_c(s1, k)
         if u_hubbard_non_loc:
-            for s1 in self.spins:
-                for s2 in self.spins:
-                    for i in sites:
-                        for j in sites:
-                            for k in sites:
-                                for l in sites:
-                                    self.hamiltonian += u_c_nl_transf[i, j, k, l, s1, s2] * self._unblocked_c_dag(s1, i) * self._unblocked_c_dag(s2, j) *  self._unblocked_c(s2, l) * self._unblocked_c(s1, k)
+            for i, j, k, l, s1, s2 in product(*[sites]*4 + [self.spins]*2):
+                self.hamiltonian += u_c_nl_transf[i, j, k, l, s1, s2] * self._unblocked_c_dag(s1, i) * self._unblocked_c_dag(s2, j) *  self._unblocked_c(s2, l) * self._unblocked_c(s1, k)
 
     def get_hamiltonian(self):
         return self.hamiltonian
@@ -103,11 +94,6 @@ class ClusterTransformation():
     def backtransform(self, g):
         g_c(g, self.transf_mat, self.g_struct, self.spins)
 
-class ClusterTransformationDMFT(ClusterTransformation):
-    """
-    ClusterTransformation class specialized to DMFT quantities, has only some additional methods
-    dmft quantities can be set by the setter in either basis
-    """
     def set_dmft_objs(self, g0, g, sigma):
         """sets Weiss-Field, Green\'s function and self-energy at once"""
         self.set_g_0_iw(g0)
@@ -141,7 +127,7 @@ class ClusterTransformationDMFT(ClusterTransformation):
         return self.sigma_iw
     
 
-def transf_indices(g_c, transformation, spins, almost_zero = 10e-5):
+def transf_indices(g_c, transformation, spins, almost_zero = 10e-9):
     """
     Finds the new blockstructure of G_loc using the unitary transformation u.
     transformation is a matrix over the cluster sites
@@ -154,11 +140,9 @@ def transf_indices(g_c, transformation, spins, almost_zero = 10e-5):
     blockdiag_len = list()
     _blockdiag_len = 0
     for s, b in g_c:
-        for i in sites:
-            for l in sites:
-                for m in range(len(b.data[:,0,0])):
-                    if abs(sum_list([sum_list([u[i, j] * b.data[m, j, k] * u_inv[k, l] for j in sites]) for k in sites])) > almost_zero:
-                        g_block_structure[i, l] = 1
+        for i, l, m in product(sites, sites, range(len(b.data[:,0,0]))):
+            if abs(sum_list([sum_list([u[i, j] * b.data[m, j, k] * u_inv[k, l] for j in sites]) for k in sites])) > almost_zero:
+                g_block_structure[i, l] = 1
     for i in sites:
         block_is_zero = True
         for j in range(i, n_sites, 1):
@@ -191,10 +175,8 @@ def g_c(g, transformation, transf_indices, spins):
     u_inv = inverse(u)
     sites = range(len(u))
     g_c = BlockGf(name_block_generator = [(s, GfImFreq(indices = sites, mesh = g[transf_indices[0][0]].mesh)) for s in spins], make_copies = False)
-    for s in spins:
-        for i in sites:
-            for j in sites:
-                g_c[s][i, j] << sum_list([sum_list([u_inv[i, k] * _unblocked_g_transf(g, s, k, l, transf_indices) * u[l, j]  for k in sites]) for l in sites])
+    for s, i, j in product(spins, sites, sites):
+        g_c[s][i, j] << sum_list([sum_list([u_inv[i, k] * _unblocked_g_transf(g, s, k, l, transf_indices) * u[l, j]  for k in sites]) for l in sites])
     return g_c
 
 def _unblocked_g_transf(g, s, row, col, transf_indices):
@@ -202,14 +184,12 @@ def _unblocked_g_transf(g, s, row, col, transf_indices):
     i1 = row if row > col else col
     ordered_keys = [transf_indices[ii][0] for ii in range(len(transf_indices))]
     j = 0
-
     for key in ordered_keys:
         if s in key:
             for k in dict(transf_indices)[key]:
                 if i0 == j:
                     (block, ind1) = (key, k)
                 j += 1
-
     if len(dict(transf_indices)[block]) > ind1 + i1 - i0:
         if row <= col:
             return g[block][ind1, ind1 + i1 - i0]
