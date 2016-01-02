@@ -3,10 +3,12 @@ from numpy import empty, identity, array, zeros
 
 from .other import sum_list, delta
 
-class CoulombTensor(object):
-
-    def __init__(self, u_int, dimension, spins = ['up', 'down']):
-        self.spins = spins
+class CoulombTensorHubbard(object):
+    """
+    specialised to spin blocks
+    """
+    def __init__(self, u_int, dimension, blocks):
+        self.blocks = blocks
         self.u_int = u_int
         self.d = dimension
         self.data = zeros([self.d, self.d, self.d, self.d, 2, 2], dtype = float)
@@ -16,17 +18,17 @@ class CoulombTensor(object):
     def __getitem__(self, key):
         key = list(key)
         for s in [4, 5]:
-            if key[s] == self.spins[0]:
+            if key[s] == self.blocks[0]:
                 key[s] = 0
-            elif key[s] == self.spins[1]:
+            elif key[s] == self.blocks[1]:
                 key[s] = 1
             else:
                 print 'CoulombTensor did not recognise the spinname'
         return self.data[key[0], key[1], key[2], key[3], key[4], key[5]]
 
     def show(self, len_per_entry = 4):
-        for s1, ss1 in enumerate(self.spins):
-            for s2, ss2 in enumerate(self.spins):
+        for s1, ss1 in enumerate(self.blocks):
+            for s2, ss2 in enumerate(self.blocks):
                 print '(' + ss1 + ', ' + ss2 + ')'
                 for i in range(self.d):
                     for j in range(self.d):
@@ -55,7 +57,7 @@ class CoulombTensor(object):
         self.data = result
         return self
 
-class NNCoulombTensor(CoulombTensor):
+class NNCoulombTensorHubbard(CoulombTensorHubbard):
 
     def __init__(self, u_int, dimension):
         self.u_int = array(u_int)

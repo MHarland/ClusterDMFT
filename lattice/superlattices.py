@@ -217,8 +217,11 @@ class l_dim(Superlattice):
     def get_clusterlatticebasis(self):
         return [[0, 0], [.5, 0]]
 
+    def get_blocks(self):
+        return ['up', 'dn']
+
     def get_g_transf_struct_orbital(self):
-        return [[str(i)+'-'+s, [0]] for s in ['up', 'down'] for i in range(2)]
+        return [[s+'-'+str(i), [0]] for s in ['up', 'dn'] for i in range(2)]
 
     def get_g_transf_struct_site(self):
         return [[str(i)+'-'+s, range(2)] for s in ['up', 'down'] for i in range(1)]

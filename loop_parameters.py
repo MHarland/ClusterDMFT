@@ -15,7 +15,7 @@ class CleanLoopParameters(dict):
                                 'g_transf_struct': False,
                                 'sigma_c_iw': False,
                                 'dmu': False,
-                                'spins': ['up', 'down'],
+                                'blocks': ['up', 'down'],
                                 'mu': 0,
                                 'u_hubbard_non_loc': 0,
                                 'n_iw': 1025,
@@ -41,7 +41,8 @@ class CleanLoopParameters(dict):
                                 'measure_pert_order': True,
                                 'move_shift': True,
                                 'move_double': True,
-                                'measure_state_trace_contrib': True
+                                'measure_state_trace_contrib': True,
+                                'nambu': False
                                 }
 
     def __init__(self, *args, **kwargs):

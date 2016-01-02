@@ -20,6 +20,7 @@ from .plot import plot_from_archive, plot_of_loops_from_archive, checksym_plot, 
 from .loop_parameters import CleanLoopParameters
 from .process_g import addExtField
 from .transformation.sites import ClustersiteTransformation
+from .transformation.nambuplaquette import NambuPlaquetteTransformation
 from .utility import get_site_nrs, get_dim, get_n_sites
 
 class CDmft(ArchiveConnected):
@@ -65,11 +66,17 @@ class CDmft(ArchiveConnected):
         dmft = DMFTObjects(**clp)
         raw_dmft = DMFTObjects(**clp)
         g_c_iw, sigma_c_iw, g_0_c_iw, dmu = dmft.get_dmft_objs()
-        transf = ClustersiteTransformation(g_loc = scheme.g_local(sigma_c_iw, dmu), **clp)
-        clp.update({'g_transf_struct': transf.get_g_struct()})
-        raw_transf = ClustersiteTransformation(**clp)
+
+        if clp['nambu']:
+            transf = NambuPlaquetteTransformation(**clp)
+            raw_transf = NambuPlaquetteTransformation(**clp)
+        else:
+            transf = ClustersiteTransformation(g_loc = scheme.g_local(sigma_c_iw, dmu), **clp)
+            clp.update({'g_transf_struct': transf.get_g_struct()})
+            raw_transf = ClustersiteTransformation(**clp)
         transf.set_hamiltonian(**clp)
         if p['verbosity'] > 0: mpi.report('New basis:', transf.get_g_struct())
+
         impurity = Solver(beta = clp['beta'], gf_struct = dict(transf.get_g_struct()), 
                           n_tau = clp['n_tau'], n_iw = clp['n_iw'], n_l = clp['n_legendre'])
         impurity.Delta_tau.name = '$\\tilde{\\Delta}_c$'
@@ -188,7 +195,8 @@ class CDmft(ArchiveConnected):
         p['archive'] = self.archive
         n_sites = p['n_sites']
         sites = p['sites']
-        spins = p['spins']
+        blocks = p['blocks']
+        transf_blocks = p['g_transf_struct']
 
         if not filename: filename = p['archive'][0:-3] + '.pdf'
         pp = PdfPages(filename)
@@ -208,8 +216,8 @@ class CDmft(ArchiveConnected):
         plt.close()
 
         for m in ['R', 'I']:
-            plot_from_archive(p['archive'], 'g_c_iw', range(-min(self.next_loop(), 3), 0), spins = [spins[0]], RI = m, x_window = prange, marker = 'x')
-            plot_from_archive(p['archive'], 'g_c_iw', range(-min(self.next_loop(), 3), 0), spins = [spins[1]], RI = m, x_window = prange, marker = 'o')
+            plot_from_archive(p['archive'], 'g_c_iw', range(-min(self.next_loop(), 3), 0), blocks = [blocks[0]], RI = m, x_window = prange, marker = 'x')
+            plot_from_archive(p['archive'], 'g_c_iw', range(-min(self.next_loop(), 3), 0), blocks = [blocks[1]], RI = m, x_window = prange, marker = 'o')
             pp.savefig()
             plt.close()
 
@@ -220,11 +228,11 @@ class CDmft(ArchiveConnected):
             plt.close()
         del a
 
-        plot_from_archive(p['archive'], 'delta_transf_tau', range(-min(self.next_loop(), 5), 0), spins = ['0-up'])
+        plot_from_archive(p['archive'], 'delta_transf_tau', range(-min(self.next_loop(), 5), 0), blocks = [transf_blocks[0][0]])
         pp.savefig()
         plt.close()
 
-        plot_from_archive(p['archive'], 'delta_transf_tau', spins = dict(p['g_transf_struct']).keys())
+        plot_from_archive(p['archive'], 'delta_transf_tau', blocks = dict(p['g_transf_struct']).keys())
         pp.savefig()
         plt.close()
 
@@ -239,8 +247,8 @@ class CDmft(ArchiveConnected):
                 c = 0
                 for ind in inds:
                     for orb in inds[ind]:
-                        plot_from_archive(p['archive'], f+'_raw', indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(n_graphs-1)))
-                        plot_from_archive(p['archive'], f, indices = [(orb, orb)], spins = [str(ind)], RI = m, x_window = prange, marker = '+', color = cm.jet(c/float(n_graphs-1)))
+                        plot_from_archive(p['archive'], f+'_raw', indices = [(orb, orb)], blocks = [str(ind)], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(n_graphs-1)))
+                        plot_from_archive(p['archive'], f, indices = [(orb, orb)], blocks = [str(ind)], RI = m, x_window = prange, marker = '+', color = cm.jet(c/float(n_graphs-1)))
                         c += 1
                 pp.savefig()
                 plt.close()
@@ -251,9 +259,10 @@ class CDmft(ArchiveConnected):
                 c = 0
                 for i in range(n_sites):
                     for j in range(n_sites):
-                        plot_from_archive(p['archive'], f, indices = [(i, j)], spins = ['up'], RI = m, x_window = prange, marker = 'x', color = cm.jet(c/float(-1+n_sites**2)))
-                        plot_from_archive(p['archive'], f, indices = [(i, j)], spins = ['down'], RI = m, x_window = prange, marker = '+', color = cm.jet(c/float(-1+n_sites**2)))
-                        c += 1
+                        for k, b in enumerate(blocks):
+                            mark = ['x', '+'][k%2]
+                            plot_from_archive(p['archive'], f, indices = [(i, j)], blocks = [b], RI = m, x_window = prange, marker = mark, color = cm.jet(int(c)/float(-1+n_sites**len(blocks))))
+                            c += .5
                 pp.savefig()
                 plt.close()
 

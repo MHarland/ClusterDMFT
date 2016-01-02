@@ -17,6 +17,7 @@ p['cluster'] = sl.get_clusterlatticebasis() # basis: clusterlatticevectors
 
 # dmft
 p['scheme'] = 'cellular_dmft'
+p['blocks'] = sl.get_blocks()
 p['n_kpts'] = 32
 p['mix_coeff'] = 1
 p['impose_paramagnetism'] = False
@@ -31,8 +32,8 @@ p['tail_start'] = 50
 # solver
 p["max_time"] = -1
 p["length_cycle"] = 20
-p["n_warmup_cycles"] = 5 * 10**4
-p["n_cycles"] = int(10**6 *.5)
+p["n_warmup_cycles"] = 5 * 10**3
+p["n_cycles"] = int(10**5 *.5)
 p['n_iw'] = 1025
 p['n_tau'] = 10001
 p['make_histograms'] = False
