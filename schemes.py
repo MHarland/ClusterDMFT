@@ -1,4 +1,5 @@
-from numpy import pi, dot, ndarray, array, exp
+from itertools import product
+from numpy import pi, dot, ndarray, array, exp, zeros, identity, bmat
 from pytriqs.gf.local import iOmega_n, inverse
 
 from .lattice.superlatticetools import _init_k_sum
@@ -12,8 +13,28 @@ class Cellular_DMFT(object):
     def __init__(self, cluster_lattice, cluster, t, n_kpts, *args, **kwargs):
         self.k_sum = _init_k_sum(cluster_lattice, cluster, t, n_kpts)
 
-    def g_local(self, sigma, mu):
-        return self.k_sum(mu = mu, Sigma = sigma)
+    def g_local(self, sigma_c_iw, dmu):
+        return self.k_sum(mu = dmu, Sigma = sigma_c_iw)
+
+class Cellular_DMFT_Nambu(object):
+    """
+    RevModPhys.77.1027
+    """
+    def __init__(self, cluster_lattice, cluster, t, n_kpts, *args, **kwargs):
+        self.k_sum = _init_k_sum(cluster_lattice, cluster, t, n_kpts)
+
+    def g_local(self, sigma_c_iw, dmu):
+        blocks = [ind for ind in sigma_c_iw.indices]
+        d = len(sigma_c_iw[blocks[0]].data[0,:,:])
+        field = [zeros([d, d])]
+        for i in range(int(d/2), d):
+            field[0][i,i] = -2 * dmu
+        hole_sign = identity(d)
+        for i in range(int(d/2), d):
+            hole_sign[i, i] *= -1
+        eps_nambu = lambda eps: bmat([[eps[:int(d/2),:int(d/2)],eps[:int(d/2),int(d/2):d]],
+                                      [eps[int(d/2):d,:int(d/2)],-eps[int(d/2):d,int(d/2):d]]])
+        return self.k_sum(mu = dmu, Sigma = sigma_c_iw, field = field, epsilon_hat = eps_nambu)
 
 class PCDMFT(object):
     """
@@ -24,7 +45,7 @@ class PCDMFT(object):
         self.lattice = SEPeriodization(cluster_lattice, cluster, t, n_kpts)
         self.periodization = periodization
 
-    def g_local(self, sigma, mu):
+    def g_local(self, sigma, mu): #TODO dmu etc
         self.lattice.set_sigma_lat(sigma, self.periodization)
         self.lattice.set_g_lat(self.lattice.get_sigma_lat(), mu)
         del self.lattice.sigma_lat
@@ -58,5 +79,7 @@ def get_scheme(parameters):
     elif p['scheme'] == 'mpcdmft':
         assert 'periodization' in p, 'periodization required for MPCDMFT'
         scheme = MPCDMFT(p['cluster_lattice'], p['cluster'], p['t'], p['n_kpts'], p['periodization'])
+    elif p['scheme'] == 'cellular_dmft_nambu':
+        scheme = Cellular_DMFT_Nambu(p['cluster_lattice'], p['cluster'], p['t'], p['n_kpts'])
     return scheme
 

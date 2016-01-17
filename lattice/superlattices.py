@@ -24,7 +24,7 @@ class TwoByTwoClusterInSquarelattice(object):
         return [[0, 0], [0, .5], [.5, 0], [.5, .5]]
 
     def get_transf_orbital(self):
-        return [[0.5, 0.5, 0.5, 0.5], [0.5, 0.5, -0.5, -0.5], [0.5, -0.5, 0.5, -0.5], [0.5, -0.5, -0.5, 0.5]]
+        return [[.5, .5, .5, .5], [.5, -.5, .5, -.5], [.5, .5, -.5, -.5], [.5, -.5, -.5, .5]]
 
     def get_transf_C4(self, theta):
         x = .5
@@ -36,6 +36,9 @@ class TwoByTwoClusterInSquarelattice(object):
 
     def get_g_transf_struct_orbital(self):
         return [[str(i)+'-'+s, [0]] for s in ['up', 'down'] for i in range(4)]
+
+    def get_g_transf_struct_nambu(self):
+        return [[i, range(2)] for i in ['G','X','Y','M']]
 
     def get_g_transf_struct_site(self):
         return [[str(i)+'-'+s, range(4)] for s in ['up', 'down'] for i in range(1)]
@@ -187,7 +190,7 @@ class pyrochlore(object):
         return [[0, 0, 0], [.5, 0, 0], [0, .5, 0], [0, 0, .5]]
 
     def get_transf_orbital(self):
-        return [[0.5, 0.5, 0.5, 0.5], [0.5, 0.5, -0.5, -0.5], [0.5, -0.5, 0.5, -0.5], [0.5, -0.5, -0.5, 0.5]]
+        return [[.5, .5, .5, .5], [.5, -.5, .5, -.5], [.5, .5, -.5, -.5], [.5, -.5, -.5, .5]]
 
     def get_transf_dimer(self):
         n = 1/sqrt(2)
@@ -200,14 +203,14 @@ class pyrochlore(object):
         return [[str(i)+'-'+s, range(4)] for s in ['up', 'down'] for i in range(1)]
 
 
-class l_dim(Superlattice):
+class DimerInChain(Superlattice):
     def __init__(self):
         pass
 
     def get_hopping(self, t = -1):
         return {(0, 0) : [[0,t],[t,0]], (1, 0) : [[0,t],[0,0]], (-1, 0) : [[0,0],[t,0]]}
 
-    def get_symmetry_transformation(self):
+    def get_transf_orbital(self):
         x = 1/sqrt(2)
         return [[x, x], [x, -x]]
 

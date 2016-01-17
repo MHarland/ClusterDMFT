@@ -1,4 +1,4 @@
-from numpy import array, empty, dot, absolute, zeros, sqrt, cos, sin, pi, matrix, kron
+from numpy import array, empty, dot, absolute, zeros, sqrt, cos, sin, pi, matrix, kron, concatenate
 from numpy.linalg import norm, inv
 from pytriqs.lattice.tight_binding import BravaisLattice, TightBinding, TBLattice
 from pytriqs.lattice.lattice_tools import energies_on_bz_grid
@@ -130,12 +130,17 @@ def _init_k_sum(lattice_vectors, lattice_basis, hopping, n_kpts, use_TBSuperLatt
         basis_c.append(cartesian(lattice_vectors, v))
     basis_c = array(basis_c)
     
-    if use_TBSuperLattice:
+    if use_TBSuperLattice: # todo rm
         sublattice = TBLattice(units = basis_c, hopping = hopping)
         lattice = TBSuperLattice(tb_lattice = sublattice, 
                                  super_lattice_units = lattice_vectors)
     else:
-        lattice = TBLattice(units = lattice_vectors, hopping = hopping, orbital_positions = basis_c, orbital_names = [str(i) for i in range(len(lattice_basis))])
+        orbnames = [str(i) for i in range(len(hopping[(0,0)]))]
+        orbpos = basis_c
+        if len(orbpos) < len(orbnames):
+            assert len(orbpos) * 2 == len(orbnames), 'inconsistency in TBLattice __init__'
+            orbpos = concatenate((orbpos, orbpos), axis = 0)
+        lattice = TBLattice(units = lattice_vectors, hopping = hopping, orbital_positions = orbpos, orbital_names = orbnames)
     return SumkDiscreteFromLattice(lattice = lattice, 
                                    n_points = n_kpts, 
                                    method = 'Riemann')

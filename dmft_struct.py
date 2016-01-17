@@ -7,11 +7,11 @@ class DMFTObjects(ArchiveConnected):
     """
     Initializes the objects that converge during the DMFT cycles
     """
-    def __init__(self, archive, beta, n_iw, sigma_c_iw, dmu, blocks, sites, mix, *args, **kwargs):
+    def __init__(self, archive, beta, n_iw, sigma_c_iw, dmu, blocks, blockstates, mix, *args, **kwargs):
         sigma_iw = sigma_c_iw
         super(DMFTObjects, self).__init__(archive)
-        g_init = GfImFreq(indices = sites, beta = beta, n_points = n_iw)
-        self.g_iw = BlockGf(name_block_generator = [(s, GfImFreq(indices = sites, beta = beta, n_points = n_iw, name = '$G_{c'+s+'}$')) for s in blocks], name = '$G_c$')
+        g_init = GfImFreq(indices = blockstates, beta = beta, n_points = n_iw)
+        self.g_iw = BlockGf(name_block_generator = [(s, GfImFreq(indices = blockstates, beta = beta, n_points = n_iw, name = '$G_{c'+s+'}$')) for s in blocks], name = '$G_c$')
         self.sigma_iw = BlockGf(name_block_generator = [(s, g_init.copy()) for s in blocks],
                                 name = '$\Sigma_c$')
         self.g_0_iw = BlockGf(name_block_generator = [(s, g_init.copy()) for s in blocks],

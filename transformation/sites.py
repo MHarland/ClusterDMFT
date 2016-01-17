@@ -70,18 +70,15 @@ class ClustersiteTransformation():
         return self.g_struct
 
     def _unblocked_c(self, s, i, dag = False):
-        ordered_keys = [self.g_struct[ii][0] for ii in range(len(self.g_struct))]
-        j = 0
+        ordered_keys = [self.g_struct[j][0] for j in range(len(self.g_struct))]
         for key in ordered_keys:
             for k in dict(self.g_struct)[key]:
-                if s in key:
-                    if i == j:
-                        if dag:
-                            return C_dag(key, k)
-                        else:
-                            return C(key, k)
+                if s in key and str(i) in key:
+                    if dag:
+                        return C_dag(key, k)
                     else:
-                        j += 1
+                        return C(key, k)
+        assert False, 'check blocks and gf_transf_struct - blocks must be in gf_transf_struct'
 
     def _unblocked_c_dag(self, s, i):
         return self._unblocked_c(s, i, dag = True)
@@ -90,7 +87,7 @@ class ClustersiteTransformation():
         return g_transf(g, self.transf_mat, self.g_struct, self.blocks)
 
     def backtransform(self, g):
-        g_c(g, self.transf_mat, self.g_struct, self.blocks)
+        return g_c(g, self.transf_mat, self.g_struct, self.blocks)
 
     def set_dmft_objs(self, g0, g, sigma):
         """sets Weiss-Field, Green\'s function and self-energy at once"""

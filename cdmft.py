@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt, cm
 from matplotlib.backends.backend_pdf import PdfPages
 from numpy import ndarray, identity, array, zeros
 from pytriqs.utility import mpi
-from pytriqs.gf.local import BlockGf, inverse, GfReFreq, GfImFreq, GfImTime, LegendreToMatsubara, TailGf
+from pytriqs.gf.local import BlockGf, inverse, GfReFreq, GfImFreq, GfImTime, LegendreToMatsubara, TailGf, iOmega_n
 from pytriqs.version import version
 from pytriqs.archive import HDFArchive
 from pytriqs.plot.mpl_interface import oplot
@@ -21,7 +21,7 @@ from .loop_parameters import CleanLoopParameters
 from .process_g import addExtField
 from .transformation.sites import ClustersiteTransformation
 from .transformation.nambuplaquette import NambuPlaquetteTransformation
-from .utility import get_site_nrs, get_dim, get_n_sites
+from .utility import get_site_nrs, get_dim, get_n_sites, Reporter
 
 class CDmft(ArchiveConnected):
     """
@@ -61,54 +61,87 @@ class CDmft(ArchiveConnected):
     def run_dmft_loops(self, n_dmft_loops = 1):
         """runs the DMFT calculation"""
         clp = p = CleanLoopParameters(self.get_parameters())
-        if clp['verbosity'] > 0: mpi.report('Parameters:', clp)
+        report = Reporter(**clp)
+        report('Parameters:', clp)
         scheme = get_scheme(clp)
         dmft = DMFTObjects(**clp)
         raw_dmft = DMFTObjects(**clp)
         g_c_iw, sigma_c_iw, g_0_c_iw, dmu = dmft.get_dmft_objs()
 
-        if clp['nambu']:
+        report('Initializing...')
+        if 'nambu' in clp['scheme']:
             transf = NambuPlaquetteTransformation(**clp)
             raw_transf = NambuPlaquetteTransformation(**clp)
+            g_0_c_iw << 0
         else:
             transf = ClustersiteTransformation(g_loc = scheme.g_local(sigma_c_iw, dmu), **clp)
             clp.update({'g_transf_struct': transf.get_g_struct()})
             raw_transf = ClustersiteTransformation(**clp)
         transf.set_hamiltonian(**clp)
-        if p['verbosity'] > 0: mpi.report('New basis:', transf.get_g_struct())
-
+        report(transf.hamiltonian)
+        report('Transformation ready')
+        report('New basis:', transf.get_g_struct())
         impurity = Solver(beta = clp['beta'], gf_struct = dict(transf.get_g_struct()), 
                           n_tau = clp['n_tau'], n_iw = clp['n_iw'], n_l = clp['n_legendre'])
         impurity.Delta_tau.name = '$\\tilde{\\Delta}_c$'
         rnames = random_generator_names_list()
+        report('Impurity solver ready')
 
         for loop_nr in range(self.next_loop(), self.next_loop() + n_dmft_loops):       
-            if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('DMFT-loop nr. %s'%loop_nr)
+            report('DMFT-loop nr. %s'%loop_nr)
             if mpi.is_master_node(): duration = time()
 
             dmft.find_dmu(scheme, **clp)
+            report('dmu: %s'%dmu)
             g_c_iw, sigma_c_iw, g_0_c_iw, dmu = dmft.get_dmft_objs()
-            if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('dmu: %s'%dmu)
 
+            report('Calculating local Greenfunction...')
             g_c_iw << scheme.g_local(sigma_c_iw, dmu)
             g_c_iw << addExtField(g_c_iw, p['ext_field'])
             if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(g_c_iw, p['archive'][0:-3] + 'Gchecksym' + str(loop_nr) + '.pdf')
+            report('Calculating Weiss-field...')
             g_0_c_iw << inverse(inverse(g_c_iw) + sigma_c_iw)
-
+            report('Changing basis...')
             transf.set_dmft_objs(inverse(sigma_c_iw + inverse(g_c_iw)), g_c_iw, sigma_c_iw)
+            """
+            if mpi.is_master_node():
+                ddd = impurity.Delta_tau.copy()
+                ddh = transf.g_0_iw.copy()
+                ddh << inverse(transf.g_0_iw) - iOmega_n
+                for s,b in ddd:
+                    b.set_from_inverse_fourier(ddh[s])
+                for s, b in ddd:
+                    for i in range(len(b.data[0,:,:])):
+                        oplot(b[i,i], RI='R')
+                plt.gca().set_ylim(-5,2)
+                plt.savefig('delt'+str(loop_nr)+'.pdf')
+                plt.close()
+            """
+
             if mpi.is_master_node() and p['verbosity'] > 1: 
                 checktransf_plot(transf.get_g_iw(), p['archive'][0:-3] + 'Gchecktransf' + str(loop_nr) + '.pdf')
                 checktransf_plot(g_0_c_iw, p['archive'][0:-3] + 'Gweisscheck' + str(loop_nr) + '.pdf')
-                checksym_plot(inverse(g_0_c_iw), p['archive'][0:-3] + 'invGweisscheckconst' + str(loop_nr) + '.pdf')
+                checksym_plot(inverse(transf.g_0_iw), p['archive'][0:-3] + 'invGweisscheckconst' + str(loop_nr) + '.pdf')
                 checksym_plot(inverse(transf.get_g_iw()), p['archive'][0:-3] + 'invGsymcheckconst' + str(loop_nr) + '.pdf')
 
             if not clp['random_name']: clp.update({'random_name': rnames[int((loop_nr + mpi.rank) % len(rnames))]})
             if not clp['random_seed']: clp.update({'random_seed': 862379 * mpi.rank + 12563 * self.next_loop()})
             impurity.G0_iw << transf.get_g_0_iw()
+            report('Solving impurity problem...')
+            mpi.barrier()
             impurity.solve(h_int = transf.get_hamiltonian(), **clp.get_cthyb_parameters())
+            """
+            except:
+                for s, b in impurity.Delta_tau:
+                    for i in range(len(b.data[0,:,:])):
+                        oplot(b[i,i], RI='R')
+                plt.savefig('delta'+str(loop_nr)+'.pdf')
+                plt.close()
+            """
+                
             if mpi.is_master_node() and p['verbosity'] > 1: 
                 checksym_plot(inverse(impurity.G0_iw), p['archive'][0:-3] + 'invGweisscheckconstsolver' + str(loop_nr) + '.pdf')
-
+            report('Postprocessing measurements...')
             if clp['measure_g_l']:
                 for ind, g in transf.get_g_iw(): g  << LegendreToMatsubara(impurity.G_l[ind])
             else:
@@ -122,9 +155,9 @@ class CDmft(ArchiveConnected):
                         if tind[0] == ind: block_inds = tind[1]
                     fixed_moments = TailGf(len(block_inds), len(block_inds), 1, 1)
                     fixed_moments[1] = identity(len(block_inds))
-                    g.fit_tail(fixed_moments, 8, clp['tail_start'], clp['n_iw'] - 1)
+                    g.fit_tail(fixed_moments, 3, clp['tail_start'], clp['n_iw'] - 1)
             if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(inverse(transf.get_g_iw()), p['archive'][0:-3] + 'invGsymcheckconstsolver' + str(loop_nr) + '.pdf')
-
+            report('Backtransforming...')
             transf.set_sigma_iw(inverse(transf.get_g_0_iw()) - inverse(transf.get_g_iw()))
             dmft.set_dmft_objs(*transf.get_backtransformed_dmft_objs())
             dmft.set_dmu(dmu)
@@ -136,8 +169,7 @@ class CDmft(ArchiveConnected):
             if clp['impose_afm']: dmft.afm()
             if clp['site_symmetries']: dmft.site_symmetric(clp['site_symmetries'])
             density = dmft.get_g_iw().total_density()
-            if mpi.is_master_node() and clp['verbosity'] > 0: mpi.report('Density per cluster: ' + str(density))
-
+            report('Saving results...')
             if mpi.is_master_node():
                 a = HDFArchive(p['archive'], 'a')
                 if not a.is_group('results'):
@@ -180,8 +212,8 @@ class CDmft(ArchiveConnected):
                 else:
                     a_r['n_dmft_loops'] = 1
                 del a_l, a_r, a
-                if mpi.is_master_node() and p['verbosity'] > 0: mpi.report('')
-
+            report('Loop done')
+            report('')
             mpi.barrier()
 
     def export_results(self, filename = False, prange = (0, 60)):
@@ -193,8 +225,8 @@ class CDmft(ArchiveConnected):
     def _export_results(self, filename = False, prange = (0, 60)):
         p = self.parameters = self.load('parameters')
         p['archive'] = self.archive
-        n_sites = p['n_sites']
-        sites = p['sites']
+        n_sites = len(p['blockstates'])
+        sites = p['blockstates']
         blocks = p['blocks']
         transf_blocks = p['g_transf_struct']
 
@@ -204,20 +236,20 @@ class CDmft(ArchiveConnected):
         functions = ['g_c_iw', 'sigma_c_iw']
         for f in functions:
             for i in sites:
-                plot_from_archive(p['archive'], f, [-1], indices = [(0, i)], x_window = prange, marker = '+')
+                plot_from_archive(p['archive'], f, [-1], indices = [(0, i)], x_window = prange, marker = '+', blocks = [blocks[0]])
                 pp.savefig()
                 plt.close()
 
         markers = ['o', '+', 'x', '^', '>', 'v', '<', '.', 'd', 'h']
         for i in sites:
             m = markers[i % len(markers)]
-            plot_from_archive(p['archive'], 'g_c_iw', [-1], indices = [(i, i)], x_window = prange, marker = m)
+            plot_from_archive(p['archive'], 'g_c_iw', [-1], indices = [(i, i)], x_window = prange, marker = m, blocks = [blocks[0]])
         pp.savefig()
         plt.close()
 
         for m in ['R', 'I']:
-            plot_from_archive(p['archive'], 'g_c_iw', range(-min(self.next_loop(), 3), 0), blocks = [blocks[0]], RI = m, x_window = prange, marker = 'x')
-            plot_from_archive(p['archive'], 'g_c_iw', range(-min(self.next_loop(), 3), 0), blocks = [blocks[1]], RI = m, x_window = prange, marker = 'o')
+            for b, marker in zip(blocks, ['x','o']):
+                plot_from_archive(p['archive'], 'g_c_iw', range(-min(self.next_loop(), 3), 0), blocks = [blocks[0]], RI = m, x_window = prange, marker = marker)
             pp.savefig()
             plt.close()
 
@@ -267,23 +299,23 @@ class CDmft(ArchiveConnected):
                 plt.close()
 
         for m in ['R', 'I']:
-            plot_from_archive(p['archive'], 'g_c_iw', range(-min(self.next_loop(), 5), 0), RI = m, x_window = prange, marker = '+')
+            plot_from_archive(p['archive'], 'g_c_iw', range(-min(self.next_loop(), 5), 0), RI = m, x_window = prange, marker = '+', blocks = [blocks[0]])
             pp.savefig()
             plt.close()
 
         for m in ['R', 'I']:
-            plot_from_archive(p['archive'], 'sigma_c_iw', range(-min(self.next_loop(), 5), 0), RI = m, x_window = prange, marker = '+')
+            plot_from_archive(p['archive'], 'sigma_c_iw', range(-min(self.next_loop(), 5), 0), RI = m, x_window = prange, marker = '+', blocks = [blocks[0]])
             pp.savefig()
             plt.close()
 
         functions = ['g_c_iw', 'sigma_c_iw']
         for f in functions:
-            plot_of_loops_from_archive(p['archive'], f, indices = [(0, i) for i in sites], marker = '+')
+            plot_of_loops_from_archive(p['archive'], f, indices = [(0, i) for i in sites], marker = '+', blocks = [blocks[0]])
             pp.savefig()
             plt.close()
         functions = ['density', 'sign', 'dmu']
         for f in functions:
-            plot_of_loops_from_archive(p['archive'], f, marker = '+')
+            plot_of_loops_from_archive(p['archive'], f, marker = '+', blocks = [blocks[0]])
             pp.savefig()
             plt.close()
         """

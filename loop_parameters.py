@@ -16,6 +16,7 @@ class CleanLoopParameters(dict):
                                 'sigma_c_iw': False,
                                 'dmu': False,
                                 'blocks': ['up', 'down'],
+                                'blockstates': False,
                                 'mu': 0,
                                 'u_hubbard_non_loc': 0,
                                 'n_iw': 1025,
@@ -91,5 +92,6 @@ class CleanLoopParameters(dict):
         if not pars['transformation']:
             pars['transformation'] = identity(get_n_sites(pars))
         pars['n_sites'] = get_n_sites(pars)
-        pars['sites'] = range(get_n_sites(pars))
+        if not pars['blockstates']:
+            pars['blockstates'] = range(pars['n_sites'])
         return pars
