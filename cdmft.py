@@ -78,21 +78,22 @@ class CDmft(ArchiveConnected):
             clp.update({'g_transf_struct': transf.get_g_struct()})
             raw_transf = ClustersiteTransformation(**clp)
         transf.set_hamiltonian(**clp)
-        report(transf.hamiltonian)
         report('Transformation ready')
         report('New basis:', transf.get_g_struct())
         impurity = Solver(beta = clp['beta'], gf_struct = dict(transf.get_g_struct()), 
                           n_tau = clp['n_tau'], n_iw = clp['n_iw'], n_l = clp['n_legendre'])
         impurity.Delta_tau.name = '$\\tilde{\\Delta}_c$'
         rnames = random_generator_names_list()
+        report('H = ', transf.hamiltonian)
         report('Impurity solver ready')
-
+        report('')
         for loop_nr in range(self.next_loop(), self.next_loop() + n_dmft_loops):       
             report('DMFT-loop nr. %s'%loop_nr)
             if mpi.is_master_node(): duration = time()
 
+            report('Calculating dmu...')
             dmft.find_dmu(scheme, **clp)
-            report('dmu: %s'%dmu)
+            report('dmu = %s'%dmu)
             g_c_iw, sigma_c_iw, g_0_c_iw, dmu = dmft.get_dmft_objs()
 
             report('Calculating local Greenfunction...')
@@ -103,20 +104,6 @@ class CDmft(ArchiveConnected):
             g_0_c_iw << inverse(inverse(g_c_iw) + sigma_c_iw)
             report('Changing basis...')
             transf.set_dmft_objs(inverse(sigma_c_iw + inverse(g_c_iw)), g_c_iw, sigma_c_iw)
-            """
-            if mpi.is_master_node():
-                ddd = impurity.Delta_tau.copy()
-                ddh = transf.g_0_iw.copy()
-                ddh << inverse(transf.g_0_iw) - iOmega_n
-                for s,b in ddd:
-                    b.set_from_inverse_fourier(ddh[s])
-                for s, b in ddd:
-                    for i in range(len(b.data[0,:,:])):
-                        oplot(b[i,i], RI='R')
-                plt.gca().set_ylim(-5,2)
-                plt.savefig('delt'+str(loop_nr)+'.pdf')
-                plt.close()
-            """
 
             if mpi.is_master_node() and p['verbosity'] > 1: 
                 checktransf_plot(transf.get_g_iw(), p['archive'][0:-3] + 'Gchecktransf' + str(loop_nr) + '.pdf')
@@ -124,20 +111,13 @@ class CDmft(ArchiveConnected):
                 checksym_plot(inverse(transf.g_0_iw), p['archive'][0:-3] + 'invGweisscheckconst' + str(loop_nr) + '.pdf')
                 checksym_plot(inverse(transf.get_g_iw()), p['archive'][0:-3] + 'invGsymcheckconst' + str(loop_nr) + '.pdf')
 
+            if 'nambu' in clp['scheme']: transf.prepare_hamiltonian(dmu)
             if not clp['random_name']: clp.update({'random_name': rnames[int((loop_nr + mpi.rank) % len(rnames))]})
             if not clp['random_seed']: clp.update({'random_seed': 862379 * mpi.rank + 12563 * self.next_loop()})
             impurity.G0_iw << transf.get_g_0_iw()
             report('Solving impurity problem...')
             mpi.barrier()
             impurity.solve(h_int = transf.get_hamiltonian(), **clp.get_cthyb_parameters())
-            """
-            except:
-                for s, b in impurity.Delta_tau:
-                    for i in range(len(b.data[0,:,:])):
-                        oplot(b[i,i], RI='R')
-                plt.savefig('delta'+str(loop_nr)+'.pdf')
-                plt.close()
-            """
                 
             if mpi.is_master_node() and p['verbosity'] > 1: 
                 checksym_plot(inverse(impurity.G0_iw), p['archive'][0:-3] + 'invGweisscheckconstsolver' + str(loop_nr) + '.pdf')

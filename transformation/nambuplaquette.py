@@ -16,11 +16,12 @@ class NambuPlaquetteTransformation():
     g_struct or gf_struct has an order, dict() it to make it TRIQS(CTHYB) compatible
     written and tested for unitary transformations
     """
-    def __init__(self, g_transf_struct, transformation, beta, n_iw, blocks, blockstates, *args, **kwargs):
+    def __init__(self, g_transf_struct, transformation, beta, n_iw, blocks, blockstates, t, *args, **kwargs):
         self.transf_mat = array(transformation)
         self.blocks = blocks # initial blocks
         self.blockstates = blockstates # initial blockstates
         self.g_struct = g_transf_struct
+        self.t_loc = array(t[(0,0)])[:len(self.transf_mat), :len(self.transf_mat)]
         name_blocks = [(ind, GfImFreq(indices = dict(self.g_struct)[ind], 
                                       beta = beta, 
                                       n_points = n_iw)
@@ -38,8 +39,7 @@ class NambuPlaquetteTransformation():
     def set_hamiltonian(self, u_hubbard, mu, u_hubbard_non_loc, *args, **kwargs):
         """
         transforms H_loc
-        express operators in site-basis by operators in new basis
-        u: Hubbard interaction, can also be non-local(matrix-valued) within the cluster
+        u_hubbard: Hubbard interaction
         mu: chemical potential that goes explicitly into the Hamiltonian (i.e. mu_DC)
         """
         spinspace = range(2)
@@ -48,17 +48,21 @@ class NambuPlaquetteTransformation():
         u_inv = inverse(self.transf_mat)
         u_c = CoulombTensorHubbard(-u_hubbard, dim, spinspace)
         u_c_transf = u_c.transform(u)
-        t_loc = array(kwargs['t'][(0,0)])[:dim,:dim]
         assert dot(u, u_inv).all() == identity(len(u)).all(), 'transformation not unitary'
         mu_matrices = [(mu - u_hubbard) * identity(dim), -mu * identity(dim)]
         self.hamiltonian = 0
-        self.hamiltonian -= sum_list([sum_list([sum_list([sign * self._unblocked_c_dag(s, i) * m_transform(mu_matrix, u, i, j) * self._unblocked_c(s, j) for j in range(dim)]) for i in range(dim)]) for s, sign, mu_matrix in zip(spinspace, [1, -1], mu_matrices)])
+        self.hamiltonian -= sum_list([sum_list([sum_list([self._unblocked_c_dag(s, i) * m_transform(mu_matrix, u, i, j) * self._unblocked_c(s, j) for j in range(dim)]) for i in range(dim)]) for s, mu_matrix in zip(spinspace, mu_matrices)])
         for i, j, k, l, s1, s2 in product(*[range(dim)]*4 + [spinspace]*2):
             self.hamiltonian += u_c_transf[i, j, k, l, s1, s2] * self._unblocked_c_dag(s1, i) * self._unblocked_c_dag(s2, j) * self._unblocked_c(s2, l) * self._unblocked_c(s1, k)
-        self.hamiltonian += sum_list([sum_list([sum_list([sign * self._unblocked_c_dag(s, i) * m_transform(t_loc, u, i, j) * self._unblocked_c(s, j) for j in range(dim)]) for i in range(dim)]) for s, sign in zip(spinspace, [1, -1])])
-        print 'original'
-        print self.hamiltonian
-        self.hamiltonian -= sum_list([sum_list([sum_list([sign * self._unblocked_c_dag_old(s, i) * m_transform(t_loc, u, i, j) * self._unblocked_c_old(s, j) for j in range(dim)]) for i in range(dim)]) for s, sign in zip(spinspace, [1, -1])]) # TODO for dmu
+
+    def prepare_hamiltonian(self, dmu):
+        """Subtracting in advance the consts of invG0 that the solver will add and instead adding those in the nambu basis"""
+        spinspace = range(2)
+        dim = len(self.transf_mat)
+        u = self.transf_mat
+        t_loc = self.t_loc
+        self.hamiltonian -= sum_list([sum_list([sum_list([sign * self._unblocked_c_dag_old(s, i) * m_transform(t_loc - dmu * identity(dim), u, i, j) * self._unblocked_c_old(s, j) for j in range(dim)]) for i in range(dim)]) for s, sign in zip(spinspace, [1, -1])])
+        self.hamiltonian += sum_list([sum_list([sum_list([sign * self._unblocked_c_dag(s, i) * m_transform(t_loc - dmu * identity(dim), u, i, j) * self._unblocked_c(s, j) for j in range(dim)]) for i in range(dim)]) for s, sign in zip(spinspace, [1, -1])])
 
     def get_hamiltonian(self):
         return self.hamiltonian
