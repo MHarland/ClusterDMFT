@@ -93,8 +93,8 @@ class CDmft(ArchiveConnected):
 
             report('Calculating dmu...')
             dmft.find_dmu(scheme, **clp)
-            report('dmu = %s'%dmu)
             g_c_iw, sigma_c_iw, g_0_c_iw, dmu = dmft.get_dmft_objs()
+            report('dmu = %s'%dmu)
 
             report('Calculating local Greenfunction...')
             g_c_iw << scheme.g_local(sigma_c_iw, dmu)
