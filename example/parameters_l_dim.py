@@ -1,6 +1,6 @@
-from ClusterDMFT.lattice.superlattices import l_dim as my_superlattice
+from ClusterDMFT.lattice.superlattices import DimerInChain as SL
 
-sl = my_superlattice()
+sl = SL()
 p = dict()
 
 p["verbosity"] = 2 # 2 makes plots of intermediate steps
@@ -24,7 +24,7 @@ p['impose_paramagnetism'] = False
 #p['site_symmetries'] =[[(0,0),(1,1)],[(0,1),(1,0)]] # unnecessary due to transformation
 
 # impurity
-p['transformation'] = sl.get_symmetry_transformation() # transformation on sitespace only
+p['transformation'] = sl.get_transf_orbital() # transformation on sitespace only
 p['g_transf_struct'] = sl.get_g_transf_struct_orbital()
 p['fit_tail'] = True
 p['tail_start'] = 50
@@ -32,17 +32,17 @@ p['tail_start'] = 50
 # solver
 p["max_time"] = -1
 p["length_cycle"] = 20
-p["n_warmup_cycles"] = 5 * 10**3
-p["n_cycles"] = int(10**5 *.5)
+p["n_warmup_cycles"] = 5 * 10**4
+p["n_cycles"] = int(10**6 *.5)
 p['n_iw'] = 1025
 p['n_tau'] = 10001
-p['make_histograms'] = False
+p['make_histograms'] = True
 p['measure_g_tau'] = False# use tail-fit options if g_l is not measured
 p['measure_g_l'] = True
 p['n_legendre'] = 30
 p['use_trace_estimator'] = False
-p['measure_pert_order'] = False
-p['measure_density_matrix'] = False
-p['use_norm_as_weight'] = False
+p['measure_pert_order'] = True
+p['measure_density_matrix'] = True
+p['use_norm_as_weight'] = True
 p['move_double'] = True
 p['move_shift'] = True

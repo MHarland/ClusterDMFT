@@ -157,9 +157,6 @@ class CDmft(ArchiveConnected):
                 a_r = a['results']
                 a_r.create_group(str(loop_nr))
                 a_l = a_r[str(loop_nr)]
-                a_l['delta_transf_tau'] = impurity.Delta_tau
-                if clp['measure_g_l']: a_l['g_transf_l'] = impurity.G_l
-                if clp['measure_g_tau']: a_l['g_transf_tau'] = impurity.G_tau
                 a_l['g_c_iw'] = dmft.get_g_iw()
                 a_l['g_c_iw_raw'] = raw_dmft.get_g_iw()
                 a_l['g_transf_iw'] = transf.get_g_iw()
@@ -174,19 +171,23 @@ class CDmft(ArchiveConnected):
                 a_l['g_0_transf_iw_raw'] = raw_transf.get_g_0_iw()
                 a_l['dmu'] = dmft.get_dmu()
                 a_l['density'] = density
-                a_l['sign'] = impurity.average_sign
-                #if clp['measure_density_matrix']: a_l['density_matrix'] = impurity.state_trace_contribs
-                a_l['g_atomic_tau'] = impurity.atomic_gf
                 a_l['loop_time'] = {'seconds': time() - duration,
                                     'hours': (time() - duration)/3600., 
                                     'days': (time() - duration)/3600./24.}
                 a_l['n_cpu'] = mpi.size
                 a_l['cdmft_code_version'] = CDmft._version
-                a_l['local'] = impurity.h_loc_diagonalization
                 clp_dict = dict()
                 clp_dict.update(clp)
                 a_l['parameters'] = clp_dict
                 a_l['triqs_code_version'] = version
+
+                a_l['delta_transf_tau'] = impurity.Delta_tau
+                if clp['measure_g_l']: a_l['g_transf_l'] = impurity.G_l
+                if clp['measure_g_tau']: a_l['g_transf_tau'] = impurity.G_tau
+                a_l['sign'] = impurity.average_sign
+                if clp['measure_density_matrix']: a_l['density_matrix'] = impurity.density_matrix
+                a_l['g_atomic_tau'] = impurity.atomic_gf
+                a_l['h_loc_diagonalization'] = impurity.h_loc_diagonalization
                 if a_r.is_data('n_dmft_loops'):
                     a_r['n_dmft_loops'] += 1
                 else:
