@@ -129,13 +129,18 @@ def _init_k_sum(lattice_vectors, lattice_basis, hopping, n_kpts, use_TBSuperLatt
     for v in lattice_basis:
         basis_c.append(cartesian(lattice_vectors, v))
     basis_c = array(basis_c)
-    
+
     if use_TBSuperLattice: # todo rm
         sublattice = TBLattice(units = basis_c, hopping = hopping)
         lattice = TBSuperLattice(tb_lattice = sublattice, 
                                  super_lattice_units = lattice_vectors)
     else:
-        orbnames = [str(i) for i in range(len(hopping[(0,0)]))]
+        if (0,0) in hopping.keys():
+            orbnames = [str(i) for i in range(len(hopping[(0,0)]))]
+        elif (0,0,0) in hopping.keys():
+            orbnames = [str(i) for i in range(len(hopping[(0,0,0)]))]
+        else:
+            assert False, 'No local hopping / 1D not implemented.'
         orbpos = basis_c
         if len(orbpos) < len(orbnames):
             assert len(orbpos) * 2 == len(orbnames), 'inconsistency in TBLattice __init__'
