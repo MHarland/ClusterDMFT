@@ -1,6 +1,4 @@
 from pytriqs.gf.local import BlockGf, GfImFreq, delta, inverse, GfImTime
-from pytriqs.plot.mpl_interface import oplot
-from matplotlib import pyplot as plt
 from pytriqs.utility.dichotomy import dichotomy
 from .archive import ArchiveConnected
 from .process_g import impose_site_symmetries, impose_paramagnetism, MixUpdate, impose_afm
