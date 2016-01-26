@@ -102,7 +102,7 @@ class NambuPlaquetteTransformation():
     def backtransform(self, g):
         return g_c(g, self.transf_mat, self.g_struct, self.blocks, self.blockstates)
 
-    def set_dmft_objs(self, g0, g, sigma):
+    def set_dmft_objs(self, g0, g, sigma, *args, **kwargs):
         """sets Weiss-Field, Green\'s function and self-energy at once"""
         self.set_g_iw(g)
         self.set_sigma_iw(sigma)
