@@ -1,4 +1,6 @@
-from pytriqs.gf.local import BlockGf, GfImFreq
+from pytriqs.gf.local import BlockGf, GfImFreq, delta, inverse, GfImTime
+from pytriqs.plot.mpl_interface import oplot
+from matplotlib import pyplot as plt
 from pytriqs.utility.dichotomy import dichotomy
 from .archive import ArchiveConnected
 from .process_g import impose_site_symmetries, impose_paramagnetism, MixUpdate, impose_afm
@@ -69,6 +71,27 @@ class DMFTObjects(ArchiveConnected):
                 if self.dmu - dmu_old > dmu_step_lim: dmu = dmu_old + dmu_step_lim
                 if self.dmu - dmu_old < -dmu_step_lim: dmu = dmu_old - dmu_step_lim
 
+    def make_g_0_iw_with_delta_tau_real(self, n_tau = 10000):
+        delta_iw = delta(self.g_0_iw)
+        delta_tau = self.get_delta_tau()
+        # TODO delta_tau << delta_tau.real
+        for s, b in delta_tau:
+            for n, tau in enumerate(b.mesh):
+                b.data[n,:,:] = b.data[n,:,:].real
+        delta_iw_new = self.g_0_iw.copy()
+        for s, b in delta_iw_new:
+            b.set_from_fourier(delta_tau[s])
+        g_0_inv = self.g_0_iw.copy()
+        g_0_inv << inverse(self.g_0_iw)
+        g_0_inv << g_0_inv + delta_iw - delta_iw_new
+        self.g_0_iw << inverse(g_0_inv)
+        
+    def get_delta_tau(self, n_tau = 10000):
+        delta_tau = BlockGf(name_list = [ind for ind in self.g_0_iw.indices], block_list = [GfImTime(beta = self.g_0_iw.beta, indices = [ind for ind in block.indices]) for blockname, block in self.g_0_iw], make_copies = False)
+        for s in self.g_0_iw.indices:
+            delta_tau[s].set_from_inverse_fourier(delta(self.g_0_iw[s]))
+        return delta_tau
+
     def get_g_iw(self):
         return self.g_iw
     def set_g_iw(self, g):
@@ -88,10 +111,21 @@ class DMFTObjects(ArchiveConnected):
     def get_mixing(self):
         return self.mixing
     def get_dmft_objs(self):
-        return self.g_iw, self.sigma_iw, self.g_0_iw, self.dmu
+        return self.g_0_iw, self.g_iw, self.sigma_iw, self.dmu
     def set_dmft_objs(self, g0, g, sigma, dmu = False):
         """sets G0, G and Sigma"""
         self.g_0_iw << g0
         self.g_iw << g
         self.sigma_iw << sigma
         if dmu: self.dmu = dmu
+
+def t_local(t):
+    for r, overlap_matrix in t.items():
+        local = True
+        for i in range(len(r)):
+            if r[i] != 0:
+                local = False
+        if local:
+            t_local = overlap_matrix
+            break
+    return t_local

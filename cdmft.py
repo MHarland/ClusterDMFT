@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt, cm
 from matplotlib.backends.backend_pdf import PdfPages
 from numpy import ndarray, identity, array, zeros
 from pytriqs.utility import mpi
-from pytriqs.gf.local import BlockGf, inverse, GfReFreq, GfImFreq, GfImTime, LegendreToMatsubara, TailGf, iOmega_n
+from pytriqs.gf.local import BlockGf, inverse, GfImFreq, GfImTime, LegendreToMatsubara, TailGf
 from pytriqs.version import version
 from pytriqs.archive import HDFArchive
 from pytriqs.plot.mpl_interface import oplot
@@ -14,7 +14,6 @@ from time import time
 from .archive import ArchiveConnected
 from .dmft_struct import DMFTObjects
 from .schemes import get_scheme
-from .lattice.superlatticetools import dispersion as energy_dispersion #remove somehow
 from .periodization.periodization import ClusterPeriodization
 from .plot import plot_from_archive, plot_of_loops_from_archive, checksym_plot, checktransf_plot, plot_ln_abs #move to dmftobjects?
 from .loop_parameters import CleanLoopParameters
@@ -66,7 +65,7 @@ class CDmft(ArchiveConnected):
         scheme = get_scheme(clp)
         dmft = DMFTObjects(**clp)
         raw_dmft = DMFTObjects(**clp)
-        g_c_iw, sigma_c_iw, g_0_c_iw, dmu = dmft.get_dmft_objs()
+        g_c_iw, sigma_c_iw, g_0_c_iw, dmu = dmft.get_dmft_objs() # ref, ref, ref, value
 
         report('Initializing...')
         if 'nambu' in clp['scheme']:
@@ -87,13 +86,14 @@ class CDmft(ArchiveConnected):
         report('H = ', transf.hamiltonian)
         report('Impurity solver ready')
         report('')
-        for loop_nr in range(self.next_loop(), self.next_loop() + n_dmft_loops):       
+
+        for loop_nr in range(self.next_loop(), self.next_loop() + n_dmft_loops):
             report('DMFT-loop nr. %s'%loop_nr)
             if mpi.is_master_node(): duration = time()
 
             report('Calculating dmu...')
             dmft.find_dmu(scheme, **clp)
-            g_c_iw, sigma_c_iw, g_0_c_iw, dmu = dmft.get_dmft_objs()
+            g_0_c_iw, g_c_iw, sigma_c_iw, dmu = dmft.get_dmft_objs()
             report('dmu = %s'%dmu)
 
             report('Calculating local Greenfunction...')
@@ -102,14 +102,16 @@ class CDmft(ArchiveConnected):
             if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(g_c_iw, p['archive'][0:-3] + 'Gchecksym' + str(loop_nr) + '.pdf')
             report('Calculating Weiss-field...')
             g_0_c_iw << inverse(inverse(g_c_iw) + sigma_c_iw)
+            dmft.make_g_0_iw_with_delta_tau_real()
+
             report('Changing basis...')
-            transf.set_dmft_objs(inverse(sigma_c_iw + inverse(g_c_iw)), g_c_iw, sigma_c_iw)
+            transf.set_dmft_objs(*dmft.get_dmft_objs())
 
             if mpi.is_master_node() and p['verbosity'] > 1: 
                 checktransf_plot(transf.get_g_iw(), p['archive'][0:-3] + 'Gchecktransf' + str(loop_nr) + '.pdf')
                 checktransf_plot(g_0_c_iw, p['archive'][0:-3] + 'Gweisscheck' + str(loop_nr) + '.pdf')
                 checksym_plot(inverse(transf.g_0_iw), p['archive'][0:-3] + 'invGweisscheckconst' + str(loop_nr) + '.pdf')
-                checksym_plot(inverse(transf.get_g_iw()), p['archive'][0:-3] + 'invGsymcheckconst' + str(loop_nr) + '.pdf')
+                #checksym_plot(inverse(transf.get_g_iw()), p['archive'][0:-3] + 'invGsymcheckconst' + str(loop_nr) + '.pdf')
 
             if 'nambu' in clp['scheme']: transf.prepare_hamiltonian(dmu)
             if not clp['random_name']: clp.update({'random_name': rnames[int((loop_nr + mpi.rank) % len(rnames))]})
