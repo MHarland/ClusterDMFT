@@ -9,9 +9,9 @@ p["verbosity"] = 2 # 2 makes plots of intermediate steps
 p['u_hubbard'] = 6
 p['t'] = sl.get_hopping()
 p['beta'] = 20
-p['density'] = False
-p['dmu'] = False # is used to adjust filling (in G0)
+p['cluster_density'] = 1.9
 p['mu'] = 3 # is part of H_int, chemical_potential = mu + dmu
+p['dmu']= False
 p['cluster_lattice'] = sl.get_cartesian_clusterlatticevectors()
 p['cluster'] = sl.get_clusterlatticebasis() # basis: clusterlatticevectors
 

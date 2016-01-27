@@ -17,13 +17,13 @@ class DMFTObjects(ArchiveConnected):
         self.g_0_iw = BlockGf(name_block_generator = [(s, g_init.copy()) for s in blocks],
                               name = '$\\mathcal{G}$')
         del g_init
-        if sigma_iw: 
+        if sigma_iw:
             self.sigma_iw << sigma_iw
         elif self.next_loop() > 0:
             self.sigma_iw = self.load('sigma_c_iw')
         else:
             self.sigma_iw.zero()
-        if dmu or dmu == 0:
+        if dmu or type(dmu) == int:
             self.dmu = dmu
         elif self.next_loop() > 0:
             self.dmu = self.load('dmu')
