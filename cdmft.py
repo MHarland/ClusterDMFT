@@ -65,7 +65,7 @@ class CDmft(ArchiveConnected):
         scheme = get_scheme(clp)
         dmft = DMFTObjects(**clp)
         raw_dmft = DMFTObjects(**clp)
-        g_c_iw, sigma_c_iw, g_0_c_iw, dmu = dmft.get_dmft_objs() # ref, ref, ref, value
+        g_0_c_iw, g_c_iw, sigma_c_iw, dmu = dmft.get_dmft_objs() # ref, ref, ref, value
 
         report('Initializing...')
         if 'nambu' in clp['scheme']:
@@ -76,6 +76,7 @@ class CDmft(ArchiveConnected):
             transf = ClustersiteTransformation(g_loc = scheme.g_local(sigma_c_iw, dmu), **clp)
             clp.update({'g_transf_struct': transf.get_g_struct()})
             raw_transf = ClustersiteTransformation(**clp)
+        
         transf.set_hamiltonian(**clp)
         report('Transformation ready')
         report('New basis:', transf.get_g_struct())
