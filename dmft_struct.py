@@ -2,6 +2,7 @@ from pytriqs.gf.local import BlockGf, GfImFreq, delta, inverse, GfImTime
 from pytriqs.utility.dichotomy import dichotomy
 from .archive import ArchiveConnected
 from .process_g import impose_site_symmetries, impose_paramagnetism, MixUpdate, impose_afm
+from .transformation.nambuplaquette import g_spin_fullblock
 
 class DMFTObjects(ArchiveConnected):
     """
@@ -18,7 +19,6 @@ class DMFTObjects(ArchiveConnected):
         elif self.next_loop() > 0:
             self.sigma_iw = self.load('sigma_c_iw')
         else:
-            print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             self.sigma_iw.zero()
         if dmu or type(dmu) == int:
             self.dmu = dmu
@@ -49,9 +49,12 @@ class DMFTObjects(ArchiveConnected):
     def mix(self):
         self.sigma_iw, self.dmu = self.mixing(self.sigma_iw, self.dmu)
 
-    def find_dmu(self, scheme_obj, cluster_density, dmu_lim, dmu_step_lim, verbosity, *args, **kwargs):
+    def find_dmu(self, scheme_obj, cluster_density, dmu_lim, dmu_step_lim, scheme, verbosity, *args, **kwargs):
         if cluster_density:
-            dens = lambda dmu : scheme_obj.g_local(self.sigma_iw, dmu).total_density()
+            if "nambu" in scheme:
+                dens = lambda dmu : g_spin_fullblock(scheme_obj.g_local(self.sigma_iw, dmu)).total_density()
+            else:
+                dens = lambda dmu : scheme_obj.g_local(self.sigma_iw, dmu).total_density()
             dmu_old = self.dmu
             self.dmu, density0 = dichotomy(function = dens, x_init = self.dmu, 
                                            y_value = cluster_density, 

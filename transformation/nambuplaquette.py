@@ -55,43 +55,18 @@ class NambuPlaquetteTransformation():
         for i, j, k, l, s1, s2 in product(*[range(dim)]*4 + [spinspace]*2):
             self.hamiltonian += u_c_transf[i, j, k, l, s1, s2] * self._unblocked_c_dag(s1, i) * self._unblocked_c_dag(s2, j) * self._unblocked_c(s2, l) * self._unblocked_c(s1, k)
 
-    def prepare_hamiltonian(self, dmu):
-        """Subtracting in advance the consts of invG0 that the solver will add and instead adding those in the nambu basis"""
-        spinspace = range(2)
-        dim = len(self.transf_mat)
-        u = self.transf_mat
-        t_loc = self.t_loc
-        self.hamiltonian -= sum_list([sum_list([sum_list([sign * self._unblocked_c_dag_old(s, i) * m_transform(t_loc - dmu * identity(dim), u, i, j) * self._unblocked_c_old(s, j) for j in range(dim)]) for i in range(dim)]) for s, sign in zip(spinspace, [1, -1])])
-        self.hamiltonian += sum_list([sum_list([sum_list([sign * self._unblocked_c_dag(s, i) * m_transform(t_loc - dmu * identity(dim), u, i, j) * self._unblocked_c(s, j) for j in range(dim)]) for i in range(dim)]) for s, sign in zip(spinspace, [1, -1])])
-
     def get_hamiltonian(self):
         return self.hamiltonian
 
     def get_g_struct(self):
         return self.g_struct
 
-    def _unblocked_c_old(self, s, i, dag = False):
+    def _unblocked_c(self, s, i, dag = False):
         block = self.g_struct[i][0]
         if dag:
             return C_dag(block, s)
         else:
             return C(block, s)
-
-    def _unblocked_c_dag_old(self, s, i):
-        return self._unblocked_c_old(s, i, dag = True)
-
-    def _unblocked_c(self, s, i, dag = False):
-        block = self.g_struct[i][0]
-        if dag:
-            if s == 0:
-                return C_dag(block, s)
-            else:
-                return C(block, s)
-        else:
-            if s == 0:
-                return C(block, s)
-            else:
-                return C_dag(block, s)
 
     def _unblocked_c_dag(self, s, i):
         return self._unblocked_c(s, i, dag = True)
@@ -172,3 +147,19 @@ def g_c(g, transformation, transf_indices, blocks, blockstates):
     for i, j in product(blockstates, blockstates):
         g_c[blocks[0]][i, j] << sum_list([u_inv[to_site(i), momentum_nr[momentum]] * gf(momentum, i, j) * u[momentum_nr[momentum], to_site(j)]  for momentum in momenta])
     return g_c
+
+def g_spin_fullblock(g, call_by_value = False):
+    """
+    returns a transformed copy of the original greensfunction with one full block
+    written for find_dmu
+    """
+    if call_by_value:
+        g = g.copy()
+    block_names = [bn for bn in g.indices]
+    assert len(block_names) == 1, "nambu expected to be one block"
+    block_name = block_names[0]
+    assert type(g[block_name]) == GfImFreq, "G_nambu.total_density only for GfImFreq"
+    spin_size = int(len(g[block_name].data[0,:,:])*.5)
+    for i in range(spin_size, 2*spin_size):
+        g[block_name][i,i] << -1 * g[block_name][i,i].conjugate()
+    return g

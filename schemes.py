@@ -28,10 +28,7 @@ class Cellular_DMFT_Nambu(object):
         d = len(sigma_c_iw[blocks[0]].data[0,:,:])
         field = [zeros([d, d])]
         for i in range(int(d/2), d):
-            field[0][i,i] = -2 * dmu
-        hole_sign = identity(d)
-        for i in range(int(d/2), d):
-            hole_sign[i, i] *= -1
+            field[0][i,i] = 2 * dmu # maps mu -> -mu, taking care sign-change(s) in TRIQS sumk
         eps_nambu = lambda eps: bmat([[eps[:int(d/2),:int(d/2)],eps[:int(d/2),int(d/2):d]],
                                       [eps[int(d/2):d,:int(d/2)],-eps[int(d/2):d,int(d/2):d]]])
         return self.k_sum(mu = dmu, Sigma = sigma_c_iw, field = field, epsilon_hat = eps_nambu)

@@ -19,7 +19,7 @@ from .plot import plot_from_archive, plot_of_loops_from_archive, checksym_plot, 
 from .loop_parameters import CleanLoopParameters
 from .process_g import addExtField
 from .transformation.sites import ClustersiteTransformation
-from .transformation.nambuplaquette import NambuPlaquetteTransformation
+from .transformation.nambuplaquette import NambuPlaquetteTransformation, g_spin_fullblock
 from .utility import get_site_nrs, get_dim, get_n_sites, Reporter
 
 class CDmft(ArchiveConnected):
@@ -114,7 +114,6 @@ class CDmft(ArchiveConnected):
                 checksym_plot(inverse(transf.g_0_iw), p['archive'][0:-3] + 'invGweisscheckconst' + str(loop_nr) + '.pdf')
                 #checksym_plot(inverse(transf.get_g_iw()), p['archive'][0:-3] + 'invGsymcheckconst' + str(loop_nr) + '.pdf')
 
-            if 'nambu' in clp['scheme']: transf.prepare_hamiltonian(dmu)
             if not clp['random_name']: clp.update({'random_name': rnames[int((loop_nr + mpi.rank) % len(rnames))]})
             if not clp['random_seed']: clp.update({'random_seed': 862379 * mpi.rank + 12563 * self.next_loop()})
             impurity.G0_iw << transf.get_g_0_iw()
@@ -151,7 +150,10 @@ class CDmft(ArchiveConnected):
             if clp['impose_paramagnetism']: dmft.paramagnetic()
             if clp['impose_afm']: dmft.afm()
             if clp['site_symmetries']: dmft.site_symmetric(clp['site_symmetries'])
-            density = dmft.get_g_iw().total_density()
+            if "nambu" in p["scheme"]:
+                density = g_spin_fullblock(dmft.get_g_iw(), True).total_density()
+            else:
+                density = dmft.get_g_iw().total_density()
             report('Saving results...')
             if mpi.is_master_node():
                 a = HDFArchive(p['archive'], 'a')
