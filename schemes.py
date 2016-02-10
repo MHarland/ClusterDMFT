@@ -6,7 +6,46 @@ from .lattice.superlatticetools import _init_k_sum
 from .periodization.selfenergy_periodization import SEPeriodization
 from .periodization.cumulant_periodization import MPeriodization
 
-class Cellular_DMFT(object):
+class Scheme(object):
+    def __init__(self, scheme, cluster_lattice, cluster, t, n_kpts, periodization, blocks, *args, **kwargs):
+        self.pretransf = lambda x: x
+        self.pretransf_inv = lambda x: x
+        if scheme == 'cellular_dmft':
+            self.selfconsistency = Cellular_DMFT(cluster_lattice, cluster, t, n_kpts)
+        elif scheme == 'pcdmft':
+            assert periodization, 'periodization required for PCDMFT'
+            self.selfconsistency = PCDMFT(cluster_lattice, cluster, t, n_kpts, periodization, blocks)
+        elif scheme == 'mpcdmft':
+            assert periodization, 'periodization required for MPCDMFT'
+            self.selfconsistency = MPCDMFT(cluster_lattice, cluster, t, n_kpts, periodization, blocks)
+
+    def set_pretransf(self, transformation, inverse_transformation):
+        """
+        New Basis that the results will be expressed in, contrary to the other transformation that only takes place on the impurity.
+        """
+        self.pretransf = transformation
+        self.pretransf_inv = inverse_transformation
+
+    def apply_pretransf(self, g, call_by_value = False):
+        """
+        call_by_value = True makes a copy and returns it leaving the original g unchanged
+        """
+        if call_by_value:
+            g = g.copy()
+        return self.pretransf(g)
+
+    def apply_pretransf_inv(self, g, call_by_value = True):
+        if call_by_value:
+            g = g.copy()
+        return self.pretransf_inv(g)
+
+    def g_local(self, sigma_c_iw, dmu, pretransf = True):
+        if not pretransf:
+            return self.selfconsistency.g_local(self.apply_pretransf_inv(sigma_c_iw), dmu)
+        else:
+            return self.apply_pretransf(self.selfconsistency.g_local(self.apply_pretransf_inv(sigma_c_iw), dmu), False) # call by ref due to copy in sumk
+
+class Cellular_DMFT(Scheme):
     """
     RevModPhys.77.1027
     """
@@ -16,30 +55,13 @@ class Cellular_DMFT(object):
     def g_local(self, sigma_c_iw, dmu):
         return self.k_sum(mu = dmu, Sigma = sigma_c_iw)
 
-class Cellular_DMFT_Nambu(object):
-    """
-    RevModPhys.77.1027
-    """
-    def __init__(self, cluster_lattice, cluster, t, n_kpts, *args, **kwargs):
-        self.k_sum = _init_k_sum(cluster_lattice, cluster, t, n_kpts)
-
-    def g_local(self, sigma_c_iw, dmu):
-        blocks = [ind for ind in sigma_c_iw.indices]
-        d = len(sigma_c_iw[blocks[0]].data[0,:,:])
-        field = [zeros([d, d])]
-        for i in range(int(d/2), d):
-            field[0][i,i] = 2 * dmu # maps mu -> -mu, taking care sign-change(s) in TRIQS sumk
-        eps_nambu = lambda eps: bmat([[eps[:int(d/2),:int(d/2)],eps[:int(d/2),int(d/2):d]],
-                                      [eps[int(d/2):d,:int(d/2)],-eps[int(d/2):d,int(d/2):d]]])
-        return self.k_sum(mu = dmu, Sigma = sigma_c_iw, field = field, epsilon_hat = eps_nambu)
-
-class PCDMFT(object):
+class PCDMFT(Scheme):
     """
     PhysRevB.62.R9283
     PhysRevB.69.205108
     """
-    def __init__(self, cluster_lattice, cluster, t, n_kpts, periodization):
-        self.lattice = SEPeriodization(cluster_lattice, cluster, t, n_kpts)
+    def __init__(self, cluster_lattice, cluster, t, n_kpts, periodization, blocks):
+        self.lattice = SEPeriodization(cluster_lattice, cluster, t, n_kpts, blocks)
         self.periodization = periodization
 
     def g_local(self, sigma, mu): #TODO dmu etc
@@ -50,12 +72,12 @@ class PCDMFT(object):
         del self.lattice.g_lat
         return self.lattice.get_g_lat_loc()
 
-class MPCDMFT(object):
+class MPCDMFT(Scheme):
     """
     PCDMFT with cumulant periodization.
     """
-    def __init__(self, cluster_lattice, cluster, t, n_kpts, periodization):
-        self.lattice = MPeriodization(cluster_lattice, cluster, t, n_kpts)
+    def __init__(self, cluster_lattice, cluster, t, n_kpts, periodization, blocks):
+        self.lattice = MPeriodization(cluster_lattice, cluster, t, n_kpts, blocks)
         self.periodization = periodization
 
     def g_local(self, sigma, mu):
@@ -65,18 +87,3 @@ class MPCDMFT(object):
         self.lattice.set_g_lat_loc(self.lattice.get_g_lat())
         del self.lattice.g_lat
         return self.lattice.get_g_lat_loc()
-
-def get_scheme(parameters):
-    p = parameters
-    if p['scheme'] == 'cellular_dmft':
-        scheme = Cellular_DMFT(p['cluster_lattice'], p['cluster'], p['t'], p['n_kpts'])
-    elif p['scheme'] == 'pcdmft':
-        assert 'periodization' in p, 'periodization required for PCDMFT'
-        scheme = PCDMFT(p['cluster_lattice'], p['cluster'], p['t'], p['n_kpts'], p['periodization'])
-    elif p['scheme'] == 'mpcdmft':
-        assert 'periodization' in p, 'periodization required for MPCDMFT'
-        scheme = MPCDMFT(p['cluster_lattice'], p['cluster'], p['t'], p['n_kpts'], p['periodization'])
-    elif p['scheme'] == 'cellular_dmft_nambu':
-        scheme = Cellular_DMFT_Nambu(p['cluster_lattice'], p['cluster'], p['t'], p['n_kpts'])
-    return scheme
-

@@ -31,11 +31,9 @@ class SEPeriodization(ClusterPeriodization):
 
 # code with lists being parallelized, is faster than array views used in TRIQS sumk
 def _sigma_lat(sigma, ssp, rbz_grid, spins):
-    n_iwn = len(sigma[spins[0]].data[:, 0, 0])
-    beta = sigma.beta
     n_k = len(rbz_grid)
     n_sites = len(ssp.values()[0])
-    sigma_sl = [BlockGf(name_block_generator = [(s, GfImFreq(indices = range(n_sites), beta = beta, n_points = n_iwn)) for s in spins], name = '$\Sigma_{lat}$') for i in range(n_k)]
+    sigma_sl = [BlockGf(name_block_generator = [(s, GfImFreq(indices = range(n_sites), mesh = sigma.mesh)) for s in spins], name = '$\Sigma_{lat}$') for i in range(n_k)]
     sigTrans = dict()
     for r in ssp.keys():
         sigTrans[r] = empty([n_sites, n_sites], dtype = object)

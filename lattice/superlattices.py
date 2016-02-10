@@ -1,4 +1,5 @@
 from numpy import sqrt, cos, sin, pi, array
+from scipy.linalg import block_diag
 from .superlatticetools import Superlattice
 
 class TwoByTwoClusterInSquarelattice(object):
@@ -23,7 +24,7 @@ class TwoByTwoClusterInSquarelattice(object):
     def get_clusterlatticebasis(self):
         return [[0, 0], [0, .5], [.5, 0], [.5, .5]]
 
-    def get_transf_orbital(self):
+    def get_transf_fourier(self):
         return [[.5, .5, .5, .5], [.5, -.5, .5, -.5], [.5, .5, -.5, -.5], [.5, -.5, -.5, .5]]
 
     def get_transf_C4(self, theta):
@@ -34,11 +35,14 @@ class TwoByTwoClusterInSquarelattice(object):
         phi2p = sin(theta) * phi1 + cos(theta) * phi2
         return [[x]*4,list(phi1p),list(phi2p),[x,-x,-x,x]]
 
-    def get_g_transf_struct_orbital(self):
-        return [[str(i)+'-'+s, [0]] for s in ['up', 'down'] for i in range(4)]
+    def get_blocks(self):
+        return ['up', 'down']
 
-    def get_g_transf_struct_nambu(self):
-        return [[i, range(2)] for i in ['G','X','Y','M']]
+    def get_blockstates(self):
+        return range(4)
+
+    def get_g_transf_struct_fourier(self):
+        return [[str(i)+'-'+s, [0]] for s in ['up', 'down'] for i in range(4)]
 
     def get_g_transf_struct_site(self):
         return [[str(i)+'-'+s, range(4)] for s in ['up', 'down'] for i in range(1)]
@@ -50,6 +54,11 @@ class TwoByTwoClusterInSquarelattice(object):
     def get_site_symmetries_afm(self):
         return [[(0,0),(3,3)],
                 [(1,1),(2,2)],
+                [(0,1),(1,0),(0,2),(2,0),(1,3),(3,1),(2,3),(3,2)],
+                [(0,3),(3,0),(1,2),(2,1)]]
+
+    def get_site_symmetries(self):
+        return [[(0,0),(3,3),(1,1),(2,2)],
                 [(0,1),(1,0),(0,2),(2,0),(1,3),(3,1),(2,3),(3,2)],
                 [(0,3),(3,0),(1,2),(2,1)]]
 
@@ -95,6 +104,39 @@ class TwoByTwoClusterInSquarelattice(object):
         n = 1/sqrt(2)
         print 'check transf!!! todo'
         return [[n,0,0,n],[0,n,n,0],[0,-n,n,0],[-n,0,0,n]]
+
+class TwoByTwoClusterInSquarelatticeNambu(TwoByTwoClusterInSquarelattice):
+    def get_hopping(self, t = -1, tnnn = 0):
+        h = TwoByTwoClusterInSquarelattice.get_hopping(self, t, tnnn)
+        return dict([(r, block_diag(array(t),array(t))) for r, t in h.items()])
+
+    def get_blocks(self):
+        return ['full']
+
+    def get_blockstates(self):
+        return range(8)
+
+    def get_g_transf_struct_fourier(self):
+        return [[i, range(2)] for i in ['G','X','Y','M']]
+
+    def get_periodization_afm(self):
+        p = TwoByTwoClusterInSquarelattice.get_periodization_afm(self)
+        new_p =  dict()
+        for r, s in p.items():
+            new_p[r] = []
+            for i in range(4):
+                new_p[r].append([])
+                for j in range(4):
+                    new_p[r][i].append(p[r][i][j])
+                for j in range(4):
+                    new_p[r][i].append(0)
+            for i in range(4,8):
+                new_p[r].append([])
+                for j in range(4):
+                    new_p[r][i].append(0)
+                for j in range(4):
+                    new_p[r][i].append(p[r][i-4][j])
+        return new_p
 
 class CheckerboardNNNHopping(TwoByTwoClusterInSquarelattice):
     def get_hopping(self, t = -1., tnnn = 0):

@@ -78,7 +78,7 @@ class ClustersiteTransformation():
                         return C_dag(key, k)
                     else:
                         return C(key, k)
-        assert False, 'check blocks and gf_transf_struct - blocks must be in gf_transf_struct'
+        assert False, 'check blocks and gf_transf_struct - blocks must be in gf_transf_struct.'
 
     def _unblocked_c_dag(self, s, i):
         return self._unblocked_c(s, i, dag = True)

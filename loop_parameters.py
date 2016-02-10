@@ -10,6 +10,7 @@ class CleanLoopParameters(dict):
     _replenishing_parameters = {'cluster_density': False,
                                 'verbosity': 1,
                                 'scheme': 'cellular_dmft',
+                                'periodization': False,
                                 'transformation': False,
                                 'density': False,
                                 'g_transf_struct': False,

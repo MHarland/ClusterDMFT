@@ -20,7 +20,7 @@ class ClusterPeriodization(object):
     """
     Generic periodization, provides methods for presenting periodization results, independently of the specific method used (cumulant or self-energy).
     """
-    def __init__(self, cluster_lattice = [[0, 0, 0]], cluster = [[0, 0, 0]], hopping = {(0, 0) : [[0]]}, n_kpts = 0, archive = False, spins = ['up', 'down'], groupname = 'periodization', sym_path = [], sym_path_lbls = [], *args, **kwargs):
+    def __init__(self, cluster_lattice = [[0, 0, 0]], cluster = [[0, 0, 0]], hopping = {(0, 0) : [[0]]}, n_kpts = 0, blocks = ['up', 'down'], archive = False, groupname = 'periodization', sym_path = [], sym_path_lbls = [], *args, **kwargs):
         """
         coordinates-basis:
         cluster_lattice : cartesian
@@ -39,7 +39,7 @@ class ClusterPeriodization(object):
             self.d = len(sumk.bz_points[0, :])
             self.bz_weights = sumk.bz_weights
             self.eps = sumk.hopping
-            self.spins = spins
+            self.spins = blocks
             self.sym_path = sym_path
             self.sym_path_lbls = sym_path_lbls
 

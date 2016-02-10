@@ -13,13 +13,13 @@ from time import time
 
 from .archive import ArchiveConnected
 from .dmft_struct import DMFTObjects
-from .schemes import get_scheme
+from .schemes import Scheme
 from .periodization.periodization import ClusterPeriodization
 from .plot import plot_from_archive, plot_of_loops_from_archive, checksym_plot, checktransf_plot, plot_ln_abs #move to dmftobjects?
 from .loop_parameters import CleanLoopParameters
 from .process_g import addExtField
 from .transformation.sites import ClustersiteTransformation
-from .transformation.nambuplaquette import NambuPlaquetteTransformation, g_spin_fullblock
+from .transformation.nambu import NambuTransformation
 from .utility import get_site_nrs, get_dim, get_n_sites, Reporter
 
 class CDmft(ArchiveConnected):
@@ -62,16 +62,16 @@ class CDmft(ArchiveConnected):
         clp = p = CleanLoopParameters(self.get_parameters())
         report = Reporter(**clp)
         report('Parameters:', clp)
-        scheme = get_scheme(clp)
+        scheme = Scheme(**clp)
         dmft = DMFTObjects(**clp)
         raw_dmft = DMFTObjects(**clp)
         g_0_c_iw, g_c_iw, sigma_c_iw, dmu = dmft.get_dmft_objs() # ref, ref, ref, value
 
         report('Initializing...')
-        if 'nambu' in clp['scheme']:
-            transf = NambuPlaquetteTransformation(**clp)
-            raw_transf = NambuPlaquetteTransformation(**clp)
-            g_0_c_iw << 0
+        if clp['nambu']:
+            transf = NambuTransformation(**clp)
+            scheme.set_pretransf(transf.pretransformation(), transf.pretransformation_inverse())
+            raw_transf = NambuTransformation(**clp)
         else:
             transf = ClustersiteTransformation(g_loc = scheme.g_local(sigma_c_iw, dmu), **clp)
             clp.update({'g_transf_struct': transf.get_g_struct()})
@@ -103,25 +103,25 @@ class CDmft(ArchiveConnected):
             if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(g_c_iw, p['archive'][0:-3] + 'Gchecksym' + str(loop_nr) + '.pdf')
             report('Calculating Weiss-field...')
             g_0_c_iw << inverse(inverse(g_c_iw) + sigma_c_iw)
+
             dmft.make_g_0_iw_with_delta_tau_real()
 
             report('Changing basis...')
             transf.set_dmft_objs(*dmft.get_dmft_objs())
-
             if mpi.is_master_node() and p['verbosity'] > 1: 
                 checktransf_plot(transf.get_g_iw(), p['archive'][0:-3] + 'Gchecktransf' + str(loop_nr) + '.pdf')
                 checktransf_plot(g_0_c_iw, p['archive'][0:-3] + 'Gweisscheck' + str(loop_nr) + '.pdf')
                 checksym_plot(inverse(transf.g_0_iw), p['archive'][0:-3] + 'invGweisscheckconst' + str(loop_nr) + '.pdf')
                 #checksym_plot(inverse(transf.get_g_iw()), p['archive'][0:-3] + 'invGsymcheckconst' + str(loop_nr) + '.pdf')
 
-            if not clp['random_name']: clp.update({'random_name': rnames[int((loop_nr + mpi.rank) % len(rnames))]})
+            if not clp['random_name']: clp.update({'random_name': rnames[int((loop_nr + mpi.rank) % len(rnames))]}) # TODO move
             if not clp['random_seed']: clp.update({'random_seed': 862379 * mpi.rank + 12563 * self.next_loop()})
             impurity.G0_iw << transf.get_g_0_iw()
             report('Solving impurity problem...')
             mpi.barrier()
             impurity.solve(h_int = transf.get_hamiltonian(), **clp.get_cthyb_parameters())
-                
-            if mpi.is_master_node() and p['verbosity'] > 1: 
+
+            if mpi.is_master_node() and p['verbosity'] > 1:
                 checksym_plot(inverse(impurity.G0_iw), p['archive'][0:-3] + 'invGweisscheckconstsolver' + str(loop_nr) + '.pdf')
             report('Postprocessing measurements...')
             if clp['measure_g_l']:
@@ -150,10 +150,8 @@ class CDmft(ArchiveConnected):
             if clp['impose_paramagnetism']: dmft.paramagnetic()
             if clp['impose_afm']: dmft.afm()
             if clp['site_symmetries']: dmft.site_symmetric(clp['site_symmetries'])
-            if "nambu" in p["scheme"]:
-                density = g_spin_fullblock(dmft.get_g_iw(), True).total_density()
-            else:
-                density = dmft.get_g_iw().total_density()
+            density = scheme.apply_pretransf_inv(dmft.get_g_iw(), True).total_density()
+
             report('Saving results...')
             if mpi.is_master_node():
                 a = HDFArchive(p['archive'], 'a')
