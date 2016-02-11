@@ -1,5 +1,6 @@
 from pytriqs.gf.local import BlockGf, GfImFreq, delta, inverse, GfImTime
 from pytriqs.utility.dichotomy import dichotomy
+from itertools import product
 from .archive import ArchiveConnected
 from .process_g import impose_site_symmetries, impose_paramagnetism, MixUpdate, impose_afm
 
@@ -68,10 +69,14 @@ class DMFTObjects(ArchiveConnected):
     def make_g_0_iw_with_delta_tau_real(self, n_tau = 10000):
         delta_iw = delta(self.g_0_iw)
         delta_tau = self.get_delta_tau()
-        # TODO delta_tau << delta_tau.real
         for s, b in delta_tau:
             for n, tau in enumerate(b.mesh):
                 b.data[n,:,:] = b.data[n,:,:].real
+                # Tail consistency is maintained anyways
+                #for i in range(len(b.tail.data)):
+                #    orbs = range(len(b.tail.data[i,:,:]))
+                #    for j, k in product(orbs, orbs):
+                #        b.tail.data[i,j,k] = b.tail.data[i,j,k].real
         delta_iw_new = self.g_0_iw.copy()
         for s, b in delta_iw_new:
             b.set_from_fourier(delta_tau[s])
