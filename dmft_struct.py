@@ -61,10 +61,10 @@ class DMFTObjects(ArchiveConnected):
             if self.dmu == None: dmu = dmu_old
             if dmu_lim:
                 if dmu > dmu_lim: self.dmu = dmu_lim
-                if dmu < -dmu_lim: self.dmu = -dmu_lim
+                elif dmu < -dmu_lim: self.dmu = -dmu_lim
             if dmu_step_lim:
-                if self.dmu - dmu_old > dmu_step_lim: dmu = dmu_old + dmu_step_lim
-                if self.dmu - dmu_old < -dmu_step_lim: dmu = dmu_old - dmu_step_lim
+                if self.dmu - dmu_old > dmu_step_lim: self.dmu = dmu_old + dmu_step_lim
+                elif self.dmu - dmu_old < -dmu_step_lim: self.dmu = dmu_old - dmu_step_lim
 
     def make_g_0_iw_with_delta_tau_real(self, n_tau = 10000):
         delta_iw = delta(self.g_0_iw)
