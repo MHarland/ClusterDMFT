@@ -39,11 +39,11 @@ class Scheme(object):
             g = g.copy()
         return self.pretransf_inv(g)
 
-    def g_local(self, sigma_c_iw, dmu, pretransf = True):
-        if not pretransf:
-            return self.selfconsistency.g_local(self.apply_pretransf_inv(sigma_c_iw), dmu)
+    def g_local(self, sigma_c_iw, dmu, pretransf_inv = False):
+        if not pretransf_inv:
+            return self.selfconsistency.g_local(sigma_c_iw, dmu)
         else:
-            return self.apply_pretransf(self.selfconsistency.g_local(self.apply_pretransf_inv(sigma_c_iw), dmu), False) # call by ref due to copy in sumk
+            return self.apply_pretransf_inv(self.selfconsistency.g_local(sigma_c_iw, dmu), False) # call by ref due to copy in sumk
 
 class Cellular_DMFT(Scheme):
     """

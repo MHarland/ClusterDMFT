@@ -51,7 +51,7 @@ class DMFTObjects(ArchiveConnected):
 
     def find_dmu(self, scheme_obj, cluster_density, dmu_lim, dmu_step_lim, nambu, verbosity, *args, **kwargs):
         if cluster_density:
-            dens = lambda dmu : scheme_obj.g_local(self.sigma_iw, dmu, pretransf = False).total_density()
+            dens = lambda dmu : scheme_obj.g_local(self.sigma_iw, dmu, pretransf_inv = True).total_density()
             dmu_old = self.dmu
             self.dmu, density0 = dichotomy(function = dens, x_init = self.dmu, 
                                            y_value = cluster_density, 
