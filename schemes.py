@@ -40,10 +40,17 @@ class Scheme(object):
         return self.pretransf_inv(g)
 
     def g_local(self, sigma_c_iw, dmu, pretransf_inv = False):
+        blocks = [ind for ind in sigma_c_iw.indices]
+        d = len(sigma_c_iw[blocks[0]].data[0,:,:])
+        field = [zeros([d, d])]
+        for i in range(int(d/2), d):
+            field[0][i,i] = 2 * dmu # maps mu -> -mu, taking care sign-change(s) in TRIQS sumk
+        eps_nambu = lambda eps: bmat([[eps[:int(d/2),:int(d/2)],eps[:int(d/2),int(d/2):d]],
+                                      [eps[int(d/2):d,:int(d/2)],-eps[int(d/2):d,int(d/2):d]]])
         if not pretransf_inv:
-            return self.selfconsistency.g_local(sigma_c_iw, dmu)
+            return self.selfconsistency.g_local(sigma_c_iw, dmu, field = field, epsilon_hat = eps_nambu)
         else:
-            return self.apply_pretransf_inv(self.selfconsistency.g_local(sigma_c_iw, dmu), False) # call by ref due to copy in sumk
+            return self.apply_pretransf_inv(self.selfconsistency.g_local(sigma_c_iw, dmu, field = field, epsilon_hat = eps_nambu), False) # call by ref due to copy in sumk
 
 class Cellular_DMFT(Scheme):
     """
@@ -52,8 +59,8 @@ class Cellular_DMFT(Scheme):
     def __init__(self, cluster_lattice, cluster, t, n_kpts, *args, **kwargs):
         self.k_sum = _init_k_sum(cluster_lattice, cluster, t, n_kpts)
 
-    def g_local(self, sigma_c_iw, dmu):
-        return self.k_sum(mu = dmu, Sigma = sigma_c_iw)
+    def g_local(self, sigma_c_iw, dmu, *args, **kwargs):
+        return self.k_sum(mu = dmu, Sigma = sigma_c_iw, *args, **kwargs)
 
 class PCDMFT(Scheme):
     """
