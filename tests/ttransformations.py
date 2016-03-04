@@ -1,6 +1,6 @@
-from ClusterDMFT.transformation.nambuplaquette import NambuPlaquetteTransformation
+from ClusterDMFT.transformation.nambu import NambuTransformation
 from ClusterDMFT.transformation.sites import ClustersiteTransformation
-from ClusterDMFT.lattice.superlattices import TwoByTwoClusterInSquarelattice, DimerInChain
+from ClusterDMFT.lattice.superlattices import TwoByTwoClusterInSquarelatticeNambu, DimerInChain
 
 import unittest, pytriqs, itertools, numpy
 
@@ -14,8 +14,8 @@ class TestTransformations(unittest.TestCase):
         blocks = lat.get_blocks()
         g_iw = pytriqs.gf.local.BlockGf(name_block_generator = [(s, pytriqs.gf.local.GfImFreq(indices = blockstates, beta = beta, n_points = n_iw, name = '$G_{c'+s+'}$')) for s in blocks], name = '$G_c$')
         g_iw[blocks[0]] << numpy.array([[1,2],[2,1]])
-        transf = ClustersiteTransformation(lat.get_g_transf_struct_orbital(),
-                                           lat.get_transf_orbital(),
+        transf = ClustersiteTransformation(lat.get_g_transf_struct_fourier(),
+                                           lat.get_transf_fourier(),
                                            beta, n_iw, blocks, blockstates)
         g_iw_k = transf.transform(g_iw)
         g_iw_2 = transf.backtransform(g_iw_k)
@@ -30,18 +30,28 @@ class TestTransformations(unittest.TestCase):
         n_iw = 1024
         blocks = ['full']
         g_iw = pytriqs.gf.local.BlockGf(name_block_generator = [(s, pytriqs.gf.local.GfImFreq(indices = blockstates, beta = beta, n_points = n_iw, name = '$G_{c'+s+'}$')) for s in blocks], name = '$G_c$')
-        g_iw[blocks[0]] << numpy.array([[1,2,2,3,4,5,5,6],
-                                        [2,1,3,2,5,4,6,5],
-                                        [2,3,1,2,5,6,4,5],
-                                        [3,2,2,1,6,5,5,4],
-                                        [4,5,5,6,1,2,2,3],
-                                        [5,4,6,5,2,1,3,2],
-                                        [5,6,4,5,2,3,1,2],
-                                        [6,5,5,4,3,2,2,1]])
-        lat = TwoByTwoClusterInSquarelattice()
-        transf = NambuPlaquetteTransformation(lat.get_g_transf_struct_nambu(),
-                                              lat.get_transf_orbital(),
-                                              beta, n_iw, blocks, blockstates)
+        tloc = numpy.array([[1,2,2,3,4,5,5,6],
+                            [2,1,3,2,5,4,6,5],
+                            [2,3,1,2,5,6,4,5],
+                            [3,2,2,1,6,5,5,4],
+                            [4,5,5,6,1,2,2,3],
+                            [5,4,6,5,2,1,3,2],
+                            [5,6,4,5,2,3,1,2],
+                            [6,5,5,4,3,2,2,1]])
+        tloc = numpy.array([[1,2,2,3,4,5,5,6],
+                            [2,1,3,2,5,4,6,5],
+                            [2,3,1,2,5,6,4,5],
+                            [3,2,2,1,6,5,5,4],
+                            [3,4,4,5,2,3,3,4],
+                            [4,3,5,4,3,2,4,3],
+                            [4,5,3,4,3,4,2,3],
+                            [5,4,4,3,4,3,3,2]])
+        t = {(0,0) : tloc}
+        g_iw[blocks[0]] << tloc
+        lat = TwoByTwoClusterInSquarelatticeNambu()
+        transf = NambuTransformation(lat.get_g_transf_struct_fourier(),
+                                              lat.get_transf_fourier(),
+                                              beta, n_iw, blocks, blockstates, t)
         g_iw_k = transf.transform(g_iw)
         g_iw_2 = transf.backtransform(g_iw_k)
         for s, b in g_iw:
