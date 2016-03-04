@@ -116,9 +116,7 @@ class MixUpdate(object):
 
 def addExtField(g, field):
     if field:
-        indices = list()
-        for s, b in g:
-            indices.append(s)
+        indices = [i for i in g.indices]
         g = g.copy()
         ginv = g.copy()
         ginv << inverse(g)
