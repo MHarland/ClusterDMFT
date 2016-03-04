@@ -19,8 +19,11 @@ def plot_of_loops_from_archive(archive, function, matsubara_freqs = [0], blocks 
                 f_name = function + '_' + s + '_' + str(i[0]) + str(i[1])
                 for mats_nr in matsubara_freqs:
                     for l in range(n_loops):
-                        re_f_of_l[l] = float(arch['results'][str(l)][function][s][i].data[mats_nr].real)
-                        im_f_of_l[l] = float(arch['results'][str(l)][function][s][i].data[mats_nr].imag)
+                        g = arch['results'][str(l)][function][s]
+                        freqs = [w for w in g.mesh]
+                        nw = len(freqs)
+                        re_f_of_l[l] = float(g[i].data[mats_nr+int(nw*.5)].real)
+                        im_f_of_l[l] = float(g[i].data[mats_nr+int(nw*.5)].imag)
                     if RI != 'R':
                         ax.plot(im_f_of_l, label = 'Im' + f_name + '_at_ w' + str(mats_nr), **kwargs)
                     if RI != 'I':
