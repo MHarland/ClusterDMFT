@@ -16,7 +16,7 @@ class TwoByTwoClusterInSquarelattice(object):
                 (-1,0):[[0,0,0,0],[t,0,s,0,],[0,0,0,0],[s,0,t,0]],
                 (-1,-1):[[0,0,0,0],[0,0,0,0],[0,0,0,0],[s,0,0,0]],
                 (0,-1):[[0,0,0,0],[0,0,0,0],[t,s,0,0],[s,t,0,0]],
-                (1,-1):[[0,0,0,0],[0,0,s,0],[0,0,0,0],[0,0,0,0]]}
+                (1,-1):[[0,0,0,0],[0,0,0,0],[0,s,0,0],[0,0,0,0]]}
 
     def get_cartesian_clusterlatticevectors(self):
         return [[1, 0, 0], [0, 1, 0]]
@@ -149,7 +149,7 @@ class CheckerboardNNNHopping(TwoByTwoClusterInSquarelattice):
                 (-1,0):[[0,0,0,0],[t,0,0,0,],[0,0,0,0],[0,0,t,0]],
                 (-1,-1):[[0,0,0,0],[0,0,0,0],[0,0,0,0],[s,0,0,0]],
                 (0,-1):[[0,0,0,0],[0,0,0,0],[t,0,0,0],[0,t,0,0]],
-                (1,-1):[[0,0,0,0],[0,0,s,0],[0,0,0,0],[0,0,0,0]]}
+                (1,-1):[[0,0,0,0],[0,0,0,0],[0,s,0,0],[0,0,0,0]]}
 
 class SquareclusterIntegration(TwoByTwoClusterInSquarelattice):
     def get_hopping(self, t = -1., tnnn = 0, alpha = 0, alpha_prime = 0):
@@ -164,7 +164,7 @@ class SquareclusterIntegration(TwoByTwoClusterInSquarelattice):
                   (-1,0):[[0,0,0,0],[t,0,s,0,],[0,0,0,0],[s,0,t,0]],
                   (-1,-1):[[0,0,0,0],[0,0,0,0],[0,0,0,0],[s,0,0,0]],
                   (0,-1):[[0,0,0,0],[0,0,0,0],[t,s,0,0],[s,t,0,0]],
-                  (1,-1):[[0,0,0,0],[0,0,s,0],[0,0,0,0],[0,0,0,0]]})
+                  (1,-1):[[0,0,0,0],[0,0,0,0],[0,s,0,0],[0,0,0,0]]})
         return h
 
 class pyrochlore(object):
@@ -231,18 +231,18 @@ class pyrochlore(object):
     def get_clusterlatticebasis(self):
         return [[0, 0, 0], [.5, 0, 0], [0, .5, 0], [0, 0, .5]]
 
-    def get_transf_orbital(self):
+    def get_transf_fourier(self):
         return [[.5, .5, .5, .5], [.5, -.5, .5, -.5], [.5, .5, -.5, -.5], [.5, -.5, -.5, .5]]
 
     def get_transf_dimer(self):
         n = 1/sqrt(2)
         return [[n,-n,0,0],[n,n,0,0],[0,0,n,n],[0,0,-n,n]]
 
-    def get_g_transf_struct_orbital(self):
-        return [[str(i)+'-'+s, [0]] for s in ['up', 'down'] for i in range(4)]
+    def get_g_transf_struct_fourier(self):
+        return [[s+'-'+str(i), [0]] for s in ['up', 'down'] for i in range(4)]
 
     def get_g_transf_struct_site(self):
-        return [[str(i)+'-'+s, range(4)] for s in ['up', 'down'] for i in range(1)]
+        return [[s, range(4)] for s in ['up', 'down']]
 
 
 class DimerInChain(Superlattice):
@@ -252,7 +252,7 @@ class DimerInChain(Superlattice):
     def get_hopping(self, t = -1):
         return {(0, 0) : [[0,t],[t,0]], (1, 0) : [[0,t],[0,0]], (-1, 0) : [[0,0],[t,0]]}
 
-    def get_transf_orbital(self):
+    def get_transf_fourier(self):
         x = 1/sqrt(2)
         return [[x, x], [x, -x]]
 
@@ -265,11 +265,14 @@ class DimerInChain(Superlattice):
     def get_blocks(self):
         return ['up', 'dn']
 
-    def get_g_transf_struct_orbital(self):
-        return [[s+'-'+str(i), [0]] for s in ['up', 'dn'] for i in range(2)]
+    def get_blockstates(self):
+        return range(2)
+
+    def get_g_transf_struct_fourier(self):
+        return [[s+'-'+i, [0]] for s in ['up', 'dn'] for i in ['G','X']]
 
     def get_g_transf_struct_site(self):
-        return [[str(i)+'-'+s, range(2)] for s in ['up', 'down'] for i in range(1)]
+        return [[s, range(2)] for s in ['up', 'dn'] for i in range(1)]
 
 
 """

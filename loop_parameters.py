@@ -44,7 +44,10 @@ class CleanLoopParameters(dict):
                                 'move_shift': True,
                                 'move_double': True,
                                 'measure_state_trace_contrib': True,
-                                'nambu': False
+                                'nambu': False,
+                                'preloop_saves': False,
+                                'measure_density_matrix': False,
+                                'use_norm_as_weight': False
                                 }
 
     def __init__(self, *args, **kwargs):

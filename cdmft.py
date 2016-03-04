@@ -108,8 +108,13 @@ class CDmft(ArchiveConnected):
 
             report('Changing basis...')
             transf.set_dmft_objs(*dmft.get_dmft_objs())
-            if mpi.is_master_node() and p['verbosity'] > 1: 
+            if mpi.is_master_node() and p['verbosity'] > 1:
+                gtau = BlockGf(name_list = [n[0] for n in clp['g_transf_struct']], block_list = [GfImTime(indices = n[1], beta = clp['beta'], n_points = clp['n_tau']) for n in clp['g_transf_struct']])
+                for n, b in gtau:
+                    b.set_from_inverse_fourier(transf.get_g_iw()[n])
+                checktransf_plot(gtau, p['archive'][0:-3] + 'GchecktransfTAU' + str(loop_nr) + '.pdf', clp['beta'], ['X', 'Y'])
                 checktransf_plot(transf.get_g_iw(), p['archive'][0:-3] + 'Gchecktransf' + str(loop_nr) + '.pdf')
+                checktransf_plot(transf.get_sigma_iw(), p['archive'][0:-3] + 'Sigmachecktransf' + str(loop_nr) + '.pdf')
                 checktransf_plot(g_0_c_iw, p['archive'][0:-3] + 'Gweisscheck' + str(loop_nr) + '.pdf')
                 checksym_plot(inverse(transf.g_0_iw), p['archive'][0:-3] + 'invGweisscheckconst' + str(loop_nr) + '.pdf')
                 #checksym_plot(inverse(transf.get_g_iw()), p['archive'][0:-3] + 'invGsymcheckconst' + str(loop_nr) + '.pdf')
@@ -175,8 +180,8 @@ class CDmft(ArchiveConnected):
                 a_l['dmu'] = dmft.get_dmu()
                 a_l['density'] = density
                 a_l['loop_time'] = {'seconds': time() - duration,
-                                    'hours': (time() - duration)/3600., 
-                                    'days': (time() - duration)/3600./24.}
+                                    'minutes': (time() - duration)/600.,
+                                    'hours': (time() - duration)/3600.}
                 a_l['n_cpu'] = mpi.size
                 a_l['cdmft_code_version'] = CDmft._version
                 clp_dict = dict()
@@ -196,9 +201,9 @@ class CDmft(ArchiveConnected):
                 else:
                     a_r['n_dmft_loops'] = 1
                 del a_l, a_r, a
+            mpi.barrier()
             report('Loop done')
             report('')
-            mpi.barrier()
 
     def export_results(self, filename = False, prange = (0, 60)):
         """

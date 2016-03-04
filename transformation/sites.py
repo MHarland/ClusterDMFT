@@ -15,19 +15,20 @@ class ClustersiteTransformation():
     g_struct or gf_struct has an order, dict() it to make it TRIQS(CTHYB) compatible
     written and tested for unitary transformations
     """
-    def __init__(self, g_transf_struct, transformation, beta, n_iw, blocks, *args, **kwargs):
+    def __init__(self, g_transf_struct, transformation, beta, n_iw, blocks, blockstates, *args, **kwargs):
         self.transf_mat = array(transformation)
         self.blocks = blocks
+        self.g_struct = [(block, blockstates) for block in blocks]
         if g_transf_struct:
-            self.g_struct = g_transf_struct
+            self.g_transf_struct = g_transf_struct
         else:
             assert 'g_loc' in kwargs.keys(), 'ClusterTransformation needs either g_transf_struct or g_loc to init'
             g_loc = kwargs['g_loc']
-            self.g_struct = transf_indices(g_loc, transformation, self.blocks)
-        name_blocks = [(ind, GfImFreq(indices = dict(self.g_struct)[ind], 
+            self.g_transf_struct = transf_indices(g_loc, transformation, self.blocks)
+        name_blocks = [(ind, GfImFreq(indices = dict(self.g_transf_struct)[ind], 
                                       beta = beta, 
                                       n_points = n_iw)
-                        ) for ind in dict(self.g_struct).keys()]
+                        ) for ind in dict(self.g_transf_struct).keys()]
         self.g_iw = BlockGf(name_block_generator = name_blocks,
                             make_copies = True,
                             name = '$\\tilde{G}_c$')
@@ -54,40 +55,55 @@ class ClustersiteTransformation():
             u_c_nl = NNCoulombTensorHubbard(u_hubbard_non_loc, dim, blocks)
             u_c_nl_transf = u_c_nl.transform(u)
         assert dot(u, u_inv).all() == identity(len(u)).all(), 'transformation not unitary'
-        sites = range(dim)
+        blockstates = range(dim)
         mu_matrix = - mu * identity(dim)
-        self.hamiltonian = sum_list([sum_list([sum_list([self._unblocked_c_dag(s, i) * m_transform(mu_matrix, u, i, j) * self._unblocked_c(s, j) for j in sites]) for i in sites]) for s in self.blocks])
-        for i, j, k, l, s1, s2 in product(*[sites]*4 + [self.blocks]*2):
+        self.hamiltonian = sum_list([sum_list([sum_list([self._unblocked_c_dag(s, i) * m_transform(mu_matrix, u, i, j) * self._unblocked_c(s, j) for j in blockstates]) for i in blockstates]) for s in self.blocks])
+        for i, j, k, l, s1, s2 in product(*[blockstates]*4 + [self.blocks]*2):
             self.hamiltonian += u_c_transf[i, j, k, l, s1, s2] * self._unblocked_c_dag(s1, i) * self._unblocked_c_dag(s2, j) *  self._unblocked_c(s2, l) * self._unblocked_c(s1, k)
         if u_hubbard_non_loc:
-            for i, j, k, l, s1, s2 in product(*[sites]*4 + [self.blocks]*2):
+            for i, j, k, l, s1, s2 in product(*[blockstates]*4 + [self.blocks]*2):
                 self.hamiltonian += u_c_nl_transf[i, j, k, l, s1, s2] * self._unblocked_c_dag(s1, i) * self._unblocked_c_dag(s2, j) *  self._unblocked_c(s2, l) * self._unblocked_c(s1, k)
 
     def get_hamiltonian(self):
         return self.hamiltonian
 
     def get_g_struct(self):
-        return self.g_struct
+        return self.g_transf_struct
 
     def _unblocked_c(self, s, i, dag = False):
-        ordered_keys = [self.g_struct[j][0] for j in range(len(self.g_struct))]
-        for key in ordered_keys:
-            for k in dict(self.g_struct)[key]:
-                if s in key and str(i) in key:
-                    if dag:
-                        return C_dag(key, k)
-                    else:
-                        return C(key, k)
-        assert False, 'check blocks and gf_transf_struct - blocks must be in gf_transf_struct.'
+        if dag:
+            return C_dag(*self._transf_singleparticlestate(s, i))
+        else:
+            return C(*self._transf_singleparticlestate(s, i))
 
     def _unblocked_c_dag(self, s, i):
         return self._unblocked_c(s, i, dag = True)
 
+    def _transf_singleparticlestate(self, block, blockstate):
+        i = 0
+        snr = self._singleparticlestate_nr(block, blockstate)
+        for bdata in self.g_transf_struct:
+            for bs in bdata[1]:
+                if i == snr:
+                    return [bdata[0], bs]
+                else:
+                    i += 1
+
+    def _singleparticlestate_nr(self, block, blockstate):
+        i = 0
+        for bdata in self.g_struct:
+            for bs in bdata[1]:
+                if bdata[0] == block and bs == blockstate:
+                    return i
+                else:
+                    i += 1
+        assert False, "no singleparticlestate number found"
+
     def transform(self, g):
-        return g_transf(g, self.transf_mat, self.g_struct, self.blocks)
+        return g_transf(g, self.transf_mat, self.g_transf_struct, self.blocks)
 
     def backtransform(self, g):
-        return g_c(g, self.transf_mat, self.g_struct, self.blocks)
+        return g_c(g, self.transf_mat, self.g_transf_struct, self.blocks)
 
     def set_dmft_objs(self, g0, g, sigma, *args, **kwargs):
         """sets Weiss-Field, Green\'s function and self-energy at once"""
@@ -97,27 +113,27 @@ class ClustersiteTransformation():
 
     def get_backtransformed_dmft_objs(self):
         """returns backtransformed Weiss-Field, Green\'s function and self-energy"""
-        return g_c(self.g_0_iw, self.transf_mat, self.g_struct, self.blocks), g_c(self.g_iw, self.transf_mat, self.g_struct, self.blocks), g_c(self.sigma_iw, self.transf_mat, self.g_struct, self.blocks)
+        return g_c(self.g_0_iw, self.transf_mat, self.g_transf_struct, self.blocks), g_c(self.g_iw, self.transf_mat, self.g_transf_struct, self.blocks), g_c(self.sigma_iw, self.transf_mat, self.g_transf_struct, self.blocks)
 
     def set_g_0_iw(self, g):
-        if [ind for ind in g.indices] == dict(self.g_struct).keys():
+        if [ind for ind in g.indices] == dict(self.g_transf_struct).keys():
             self.g_0_iw << g
         else:
-            self.g_0_iw << g_transf(g, self.transf_mat, self.g_struct, self.blocks)
+            self.g_0_iw << g_transf(g, self.transf_mat, self.g_transf_struct, self.blocks)
     def get_g_0_iw(self):
         return self.g_0_iw
     def set_g_iw(self, g):
-        if [ind for ind in g.indices] == dict(self.g_struct).keys():
+        if [ind for ind in g.indices] == dict(self.g_transf_struct).keys():
             self.g_iw << g
         else:
-            self.g_iw << g_transf(g, self.transf_mat, self.g_struct, self.blocks)
+            self.g_iw << g_transf(g, self.transf_mat, self.g_transf_struct, self.blocks)
     def get_g_iw(self):
         return self.g_iw
     def set_sigma_iw(self, g):
-        if [ind for ind in g.indices] == dict(self.g_struct).keys():
+        if [ind for ind in g.indices] == dict(self.g_transf_struct).keys():
             self.sigma_iw << g
         else:
-            self.sigma_iw << g_transf(g, self.transf_mat, self.g_struct, self.blocks)
+            self.sigma_iw << g_transf(g, self.transf_mat, self.g_transf_struct, self.blocks)
     def get_sigma_iw(self):
         return self.sigma_iw
     
@@ -149,7 +165,7 @@ def transf_indices(g_c, transformation, blocks, almost_zero = 10e-9):
             _blockdiag_len = 0
         else:
             _blockdiag_len += 1
-    return [(str(i) + '-' + s, range(blockdiag_len[i] + 1)) for s in blocks for i in range(len(blockdiag_len))]
+    return [(s + '-' + str(i), range(blockdiag_len[i] + 1)) for s in blocks for i in range(len(blockdiag_len))]
 
 def g_transf(g, transformation, transf_indices, blocks):
     u = array(transformation)

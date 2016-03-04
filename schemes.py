@@ -7,9 +7,10 @@ from .periodization.selfenergy_periodization import SEPeriodization
 from .periodization.cumulant_periodization import MPeriodization
 
 class Scheme(object):
-    def __init__(self, scheme, cluster_lattice, cluster, t, n_kpts, periodization, blocks, *args, **kwargs):
+    def __init__(self, scheme, cluster_lattice, cluster, t, n_kpts, periodization, blocks, nambu, *args, **kwargs):
         self.pretransf = lambda x: x
         self.pretransf_inv = lambda x: x
+        self.nambu = nambu
         if scheme == 'cellular_dmft':
             self.selfconsistency = Cellular_DMFT(cluster_lattice, cluster, t, n_kpts)
         elif scheme == 'pcdmft':
@@ -40,6 +41,15 @@ class Scheme(object):
         return self.pretransf_inv(g)
 
     def g_local(self, sigma_c_iw, dmu, pretransf_inv = False):
+        if self.nambu:
+            return self._g_local_nambu(sigma_c_iw, dmu, pretransf_inv = False)
+        else:
+            return self._g_local(sigma_c_iw, dmu)
+
+    def _g_local(self, sigma_c_iw, dmu):
+        return self.selfconsistency.g_local(sigma_c_iw, dmu)
+
+    def _g_local_nambu(self, sigma_c_iw, dmu, pretransf_inv = False):
         blocks = [ind for ind in sigma_c_iw.indices]
         d = len(sigma_c_iw[blocks[0]].data[0,:,:])
         field = [zeros([d, d])]
