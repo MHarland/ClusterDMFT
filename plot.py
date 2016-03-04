@@ -128,12 +128,17 @@ def checksym_plot(g, fname, **kwargs):
     plt.savefig(fname)
     plt.close()
 
-def checktransf_plot(g, fname, **kwargs):
+def checktransf_plot(g, fname, xmax = 40, orbitals = None, **kwargs):
     plt.figure(1)
     for s, b in g:
-        mesh = list()
-        for iw in b.mesh:
-            mesh.append(iw.imag)
+        if orbitals != None:
+            if not s in orbitals:
+                continue
+        mesh = [w for w in b.mesh]
+        if mesh[-1].real > mesh[-1].imag:
+            mesh = [w.real for w in b.mesh]
+        else:
+            mesh = [w.imag for w in b.mesh]
         for i in range(len(b.data[0, :, :])):
             for j in range(len(b.data[0, :, :])):
                 if i == j:
@@ -141,21 +146,21 @@ def checktransf_plot(g, fname, **kwargs):
                 else:
                     m = 'x'
                 plt.subplot(2, 1, 1)
-                plt.plot(mesh, b.data[:, i, j].imag, label = s + '_' + str(i) + str(j), marker = m, **kwargs)
+                plt.plot(mesh, b.data[:, i, j].imag, label = s + '_' + str(i) + str(j))#, marker = m, **kwargs)
                 plt.subplot(2, 1, 2)
-                plt.plot(mesh, b.data[:, i, j].real, label = s + '_' + str(i) + str(j), marker = m, **kwargs)
+                plt.plot(mesh, b.data[:, i, j].real, label = s + '_' + str(i) + str(j))#, marker = m, **kwargs)
 
     plt.subplot(2, 1, 1)
     plt.legend(prop = {'size' : 'small'})
     plt.gca().set_xlabel('$i\omega_n$')
     plt.gca().set_ylabel('$\mathrm{Im}G(i\omega_n)$')
-    plt.gca().set_xlim(0, 40)
+    plt.gca().set_xlim(0, xmax)
 
     plt.subplot(2, 1, 2)
     plt.legend(prop = {'size' : 'small'})
     plt.gca().set_xlabel('$i\omega_n$')
     plt.gca().set_ylabel('$\mathrm{Re}G(i\omega_n)$')
-    plt.gca().set_xlim(0, 40)
+    plt.gca().set_xlim(0, xmax)
 
     plt.tight_layout()
     plt.savefig(fname)
