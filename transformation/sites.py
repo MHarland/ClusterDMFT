@@ -165,7 +165,6 @@ def transf_indices(g_c, transformation, blocks, almost_zero = 10e-9):
             _blockdiag_len = 0
         else:
             _blockdiag_len += 1
-    print [(s + '-' + str(i), range(blockdiag_len[i] + 1)) for s in blocks for i in range(len(blockdiag_len))]
     return [(s + '-' + str(i), range(blockdiag_len[i] + 1)) for s in blocks for i in range(len(blockdiag_len))]
 
 def g_transf(g, transformation, transf_indices, blocks):
