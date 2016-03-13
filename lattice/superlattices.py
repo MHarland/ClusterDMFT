@@ -167,7 +167,7 @@ class SquareclusterIntegration(TwoByTwoClusterInSquarelattice):
                   (1,-1):[[0,0,0,0],[0,0,0,0],[0,s,0,0],[0,0,0,0]]})
         return h
 
-class pyrochlore(object):
+class Pyrochlore(object):
     def __init__(self):
         pass
 
@@ -230,6 +230,12 @@ class pyrochlore(object):
 
     def get_clusterlatticebasis(self):
         return [[0, 0, 0], [.5, 0, 0], [0, .5, 0], [0, 0, .5]]
+
+    def get_blockstates(self):
+        return range(4)
+
+    def get_blocks(self):
+        return ['up', 'down']
 
     def get_transf_fourier(self):
         return [[.5, .5, .5, .5], [.5, -.5, .5, -.5], [.5, .5, -.5, -.5], [.5, -.5, -.5, .5]]
