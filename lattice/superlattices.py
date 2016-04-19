@@ -138,6 +138,16 @@ class TwoByTwoClusterInSquarelatticeNambu(TwoByTwoClusterInSquarelattice):
                     new_p[r][i].append(p[r][i-4][j])
         return new_p
 
+class TwoByTwoClusterInSquarelatticeNambuRotated(TwoByTwoClusterInSquarelatticeNambu, TwoByTwoClusterInSquarelattice):
+    def get_hopping(self, t = -1, tnnn = 0):
+        h = TwoByTwoClusterInSquarelattice.get_hopping(self, t, tnnn)
+        hh = dict()
+        s = 1/sqrt(2)
+        r_map = {(0,0):(0,0),(1,-1):(1,0),(1,0):(s,s),(1,1):(0,1),(0,1):(-s,s),(-1,1):(-1,0),(-1,0):(-s,-s),(-1,-1):(0,-1),(0,-1):(s,-s)}
+        for r, hmatrix in h.items():
+            hh[r_map[r]] = hmatrix
+        return dict([(r, block_diag(array(t),array(t))) for r, t in hh.items()])
+
 class CheckerboardNNNHopping(TwoByTwoClusterInSquarelattice):
     def get_hopping(self, t = -1., tnnn = 0):
         s = tnnn
