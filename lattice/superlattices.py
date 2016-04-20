@@ -142,8 +142,8 @@ class TwoByTwoClusterInSquarelatticeNambuRotated(TwoByTwoClusterInSquarelatticeN
     def get_hopping(self, t = -1, tnnn = 0):
         h = TwoByTwoClusterInSquarelattice.get_hopping(self, t, tnnn)
         hh = dict()
-        r = sqrt(2)
-        s = 1/sqrt(2)
+        r = 1
+        s = 1
         r_map = {(0,0):(0,0),(1,-1):(r,0),(1,0):(s,s),(1,1):(0,r),(0,1):(-s,s),(-1,1):(-r,0),(-1,0):(-s,-s),(-1,-1):(0,-r),(0,-1):(s,-s)}
         for r, hmatrix in h.items():
             hh[r_map[r]] = hmatrix
