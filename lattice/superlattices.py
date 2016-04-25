@@ -27,13 +27,12 @@ class TwoByTwoClusterInSquarelattice(object):
     def get_transf_fourier(self):
         return [[.5, .5, .5, .5], [.5, -.5, .5, -.5], [.5, .5, -.5, -.5], [.5, -.5, -.5, .5]]
 
-    def get_transf_C4(self, theta):
-        x = .5
-        phi1 = array([-x,0,0,x])
-        phi2 = array([0,-x,x,0])
-        phi1p = cos(theta) * phi1 - sin(theta) * phi2
-        phi2p = sin(theta) * phi1 + cos(theta) * phi2
-        return [[x]*4,list(phi1p),list(phi2p),[x,-x,-x,x]]
+    def get_transf_C4v(self, phi):
+        x = 1/sqrt(2)
+        y = .5
+        v1 = array([-x,0,0,x])
+        v2 = array([0,-x,x,0])
+        return [[y]*4,list(Cos[phi]*v1-Sin[phi]*v2),list(Sin[phi]*v1+Cos[phi]*v2),[y,-y,-y,y]]
 
     def get_blocks(self):
         return ['up', 'down']
@@ -261,6 +260,13 @@ class Pyrochlore(object):
     def get_g_transf_struct_site(self):
         return [[s, range(4)] for s in ['up', 'down']]
 
+    def get_transf_T(self, phi, theta):
+        x = 1/sqrt(2)
+        y = .5
+        v1 = array([-x,0,0,x])
+        v2 = array([0,-x,x,0])
+        v3 = array([x,-x,-x,x])
+        return [[x]*4,list(cos(theta)*v1+sin(phi)*sin(theta)*v2-cos(phi)*sin(theta)*v3),list(0*v1+cos(phi)*v2+sin(phi)*v3),list(sin(theta)*v1-sin(phi)*cos(theta)*v2+cos(phi)*cos(theta)*v3)]
 
 class DimerInChain(Superlattice):
     def __init__(self):
