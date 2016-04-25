@@ -32,7 +32,7 @@ class TwoByTwoClusterInSquarelattice(object):
         y = .5
         v1 = array([-x,0,0,x])
         v2 = array([0,-x,x,0])
-        return [[y]*4,list(Cos[phi]*v1-Sin[phi]*v2),list(Sin[phi]*v1+Cos[phi]*v2),[y,-y,-y,y]]
+        return [[y]*4,list(cos(phi)*v1-sin(phi)*v2),list(sin(phi)*v1+cos(phi)*v2),[y,-y,-y,y]]
 
     def get_blocks(self):
         return ['up', 'down']
@@ -265,8 +265,8 @@ class Pyrochlore(object):
         y = .5
         v1 = array([-x,0,0,x])
         v2 = array([0,-x,x,0])
-        v3 = array([x,-x,-x,x])
-        return [[x]*4,list(cos(theta)*v1+sin(phi)*sin(theta)*v2-cos(phi)*sin(theta)*v3),list(0*v1+cos(phi)*v2+sin(phi)*v3),list(sin(theta)*v1-sin(phi)*cos(theta)*v2+cos(phi)*cos(theta)*v3)]
+        v3 = array([y,-y,-y,y])
+        return [[y]*4,list(cos(theta)*v1+sin(phi)*sin(theta)*v2-cos(phi)*sin(theta)*v3),list(0*v1+cos(phi)*v2+sin(phi)*v3),list(sin(theta)*v1-sin(phi)*cos(theta)*v2+cos(phi)*cos(theta)*v3)]
 
 class DimerInChain(Superlattice):
     def __init__(self):
