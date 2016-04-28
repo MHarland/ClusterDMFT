@@ -125,3 +125,13 @@ def addExtField(g, field):
                 b[i,i] += field[s][i]
         g << inverse(ginv)
     return g
+
+def setOffdiagsZero(g):
+    ginv = g.copy()
+    ginv << inverse(g)
+    for s, b in ginv:
+        orbs = range(len(b.data[0,:,:]))
+        for i,j in product(*[orbs]*2):
+            if i != j:
+                b[i, j] << 0
+    return inverse(ginv)

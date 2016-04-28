@@ -32,6 +32,7 @@ class CleanLoopParameters(dict):
                                 'impose_paramagnetism': False,
                                 'impose_afm': False, # only for 2x2 plaquette
                                 'ext_field': False,
+                                'suppress_off_diags': False,
                                 'length_cycle': 50,
                                 'n_warmup_cycles': 5000,
                                 'random_seed': False,
