@@ -95,8 +95,8 @@ class TwoByTwoClusterInSquarelattice(object):
                           [(0,1),(1,2),0,0],
                           [(0,3),(0,1),0,0]],
                 (1, -1): [[0,0,0,0],
-                          [0,0,(1,2),0],
                           [0,0,0,0],
+                          [0,(1,2),0,0],
                           [0,0,0,0]]}
 
     def get_checkerboard_symmetry_transformation(self):
