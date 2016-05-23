@@ -17,7 +17,7 @@ from .schemes import Scheme
 from .periodization.periodization import ClusterPeriodization
 from .plot import plot_from_archive, plot_of_loops_from_archive, checksym_plot, checktransf_plot, plot_ln_abs #move to dmftobjects?
 from .loop_parameters import CleanLoopParameters
-from .process_g import addExtField, setOffdiagsZero
+from .process_g import addExtField, setOffdiagsZero, readdOffdiagConstants
 from .transformation.sites import ClustersiteTransformation
 from .transformation.nambu import NambuTransformation
 from .utility import get_site_nrs, get_dim, get_n_sites, Reporter
@@ -78,7 +78,7 @@ class CDmft(ArchiveConnected):
             raw_transf = ClustersiteTransformation(**clp)
         
         transf.set_hamiltonian(**clp)
-        report('Transformation ready')
+        report('Impurity-Blocks-Transformation ready')
         report('New basis:', transf.get_g_struct())
         impurity = Solver(beta = clp['beta'], gf_struct = dict(transf.get_g_struct()), 
                           n_tau = clp['n_tau'], n_iw = clp['n_iw'], n_l = clp['n_legendre'])
@@ -103,7 +103,7 @@ class CDmft(ArchiveConnected):
             if mpi.is_master_node() and p['verbosity'] > 1: checksym_plot(g_c_iw, p['archive'][0:-3] + 'Gchecksym' + str(loop_nr) + '.pdf')
             report('Calculating Weiss-field...')
             g_0_c_iw << inverse(inverse(g_c_iw) + sigma_c_iw)
-            if p['suppress_off_diags']: g_0_c_iw << setOffdiagsZero(g_0_c_iw)
+            if p['suppress_off_diags']: g_0_c_iw, offdiags = setOffdiagsZero(g_0_c_iw)
 
             dmft.make_g_0_iw_with_delta_tau_real()
 
@@ -126,6 +126,7 @@ class CDmft(ArchiveConnected):
             report('Solving impurity problem...')
             mpi.barrier()
             impurity.solve(h_int = transf.get_hamiltonian(), **clp.get_cthyb_parameters())
+            if p['suppress_off_diags']: g_0_c_iw = readdOffdiagConstants(g_0_c_iw, offdiags)
 
             if mpi.is_master_node() and p['verbosity'] > 1:
                 checksym_plot(inverse(impurity.G0_iw), p['archive'][0:-3] + 'invGweisscheckconstsolver' + str(loop_nr) + '.pdf')

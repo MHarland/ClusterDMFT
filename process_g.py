@@ -1,6 +1,8 @@
+from itertools import product
+import numpy as np
+
 from pytriqs.utility import mpi
 from pytriqs.gf.local import BlockGf, inverse
-from itertools import product
 
 def clip_g(bg, threshold): # TODO tail consistency(?)
     if not type(bg) == BlockGf: return clip_block(bg, threshold)
@@ -129,9 +131,24 @@ def addExtField(g, field):
 def setOffdiagsZero(g):
     ginv = g.copy()
     ginv << inverse(g)
+    offdiags = ginv.copy()
     for s, b in ginv:
         orbs = range(len(b.data[0,:,:]))
         for i,j in product(*[orbs]*2):
             if i != j:
                 b[i, j] << 0
-    return inverse(ginv)
+            else:
+                offdiags[s][i,j] << 0
+    g << inverse(ginv)
+    return g, offdiags
+
+def readdOffdiagConstants(g, offdiags):
+    ginv = g.copy()
+    ginv << inverse(g)
+    for s, b in ginv:
+        orbs = range(len(b.data[0,:,:]))
+        for i,j in product(*[orbs]*2):
+            if i != j:
+                b[i, j] << offdiags[s][i,j]
+    g << inverse(ginv)
+    return g
