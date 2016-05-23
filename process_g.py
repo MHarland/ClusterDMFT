@@ -148,7 +148,6 @@ def readdOffdiagConstants(g, offdiags):
     for s, b in ginv:
         orbs = range(len(b.data[0,:,:]))
         for i,j in product(*[orbs]*2):
-            if i != j:
-                b[i, j] << offdiags[s][i,j]
+            b[i, j] += offdiags[s][i,j]
     g << inverse(ginv)
     return g

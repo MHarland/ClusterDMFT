@@ -6,7 +6,7 @@ class CleanLoopParameters(dict):
     basically the parameters dictionary, but with additional functions that clean-up the parameters
     """
     _obligatory = ['archive', 'cluster_lattice', 'cluster', 'u_hubbard', 't', 'beta', 'n_cycles', 'mu', 'n_kpts']
-    _cthyb_keys = ['n_cycles', 'length_cycle', 'n_warmup_cycles', 'random_seed', 'random_name', 'max_time', 'verbosity', 'use_trace_estimator', 'measure_g_tau', 'measure_g_l', 'measure_pert_order', 'move_shift', 'move_double', 'measure_density_matrix', 'use_norm_as_weight']
+    _cthyb_keys = ['n_cycles', 'length_cycle', 'n_warmup_cycles', 'random_seed', 'random_name', 'max_time', 'verbosity', 'use_trace_estimator', 'measure_g_tau', 'measure_g_l', 'measure_pert_order', 'move_shift', 'move_double', 'measure_density_matrix', 'use_norm_as_weight', 'partition_method', 'performance_analysis']
     _replenishing_parameters = {'cluster_density': False,
                                 'verbosity': 1,
                                 'scheme': 'cellular_dmft',
@@ -33,6 +33,8 @@ class CleanLoopParameters(dict):
                                 'impose_afm': False, # only for 2x2 plaquette
                                 'ext_field': False,
                                 'suppress_off_diags': False,
+                                'nambu': False,
+                                'preloop_saves': False,
                                 'length_cycle': 50,
                                 'n_warmup_cycles': 5000,
                                 'random_seed': False,
@@ -40,15 +42,14 @@ class CleanLoopParameters(dict):
                                 'max_time': -1,
                                 'use_trace_estimator': False,
                                 'measure_g_tau': True,
-                                'measure_g_l': True,
-                                'measure_pert_order': True,
+                                'measure_g_l': False,
+                                'measure_pert_order': False,
                                 'move_shift': True,
                                 'move_double': True,
-                                'measure_state_trace_contrib': True,
-                                'nambu': False,
-                                'preloop_saves': False,
+                                'partition_method': "autopartition",
                                 'measure_density_matrix': False,
-                                'use_norm_as_weight': False
+                                'use_norm_as_weight': False,
+                                'performance_analysis': False
                                 }
 
     def __init__(self, *args, **kwargs):

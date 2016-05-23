@@ -126,7 +126,6 @@ class CDmft(ArchiveConnected):
             report('Solving impurity problem...')
             mpi.barrier()
             impurity.solve(h_int = transf.get_hamiltonian(), **clp.get_cthyb_parameters())
-            if p['suppress_off_diags']: g_0_c_iw = readdOffdiagConstants(g_0_c_iw, offdiags)
 
             if mpi.is_master_node() and p['verbosity'] > 1:
                 checksym_plot(inverse(impurity.G0_iw), p['archive'][0:-3] + 'invGweisscheckconstsolver' + str(loop_nr) + '.pdf')
@@ -135,6 +134,7 @@ class CDmft(ArchiveConnected):
                 for ind, g in transf.get_g_iw(): g  << LegendreToMatsubara(impurity.G_l[ind])
             else:
                 for ind, g in transf.get_g_iw(): g.set_from_fourier(impurity.G_tau[ind])
+            
             raw_transf.set_dmft_objs(transf.get_g_0_iw(),
                                      transf.get_g_iw(),
                                      inverse(transf.get_g_0_iw()) - inverse(transf.get_g_iw()))
@@ -153,6 +153,7 @@ class CDmft(ArchiveConnected):
             raw_dmft.set_dmft_objs(*raw_transf.get_backtransformed_dmft_objs())
             raw_dmft.set_dmu(dmu)
 
+            if p['suppress_off_diags']: dmft.g_iw = readdOffdiagConstants(dmft.g_iw, offdiags)
             if clp['mix']: dmft.mix()
             if clp['impose_paramagnetism']: dmft.paramagnetic()
             if clp['impose_afm']: dmft.afm()
@@ -198,6 +199,8 @@ class CDmft(ArchiveConnected):
                 if clp['measure_density_matrix']: a_l['density_matrix'] = impurity.density_matrix
                 a_l['g_atomic_tau'] = impurity.atomic_gf
                 a_l['h_loc_diagonalization'] = impurity.h_loc_diagonalization
+                if clp['measure_density_matrix']: a_l['density_matrix'] = impurity.density_matrix
+                #a_l['solve_status'] = impurity.solve_status
                 if a_r.is_data('n_dmft_loops'):
                     a_r['n_dmft_loops'] += 1
                 else:

@@ -2,6 +2,7 @@ import os
 from pytriqs.archive import HDFArchive
 from pytriqs.gf.local import BlockGf, GfImFreq, GfReFreq, GfImTime
 from pytriqs.utility import mpi
+from pytriqs.applications.impurity_solvers.cthyb import AtomDiag
 
 class ArchiveConnected(object):
     """
@@ -33,7 +34,7 @@ class ArchiveConnected(object):
         del arch
         return ll
 
-    def load(self, function_name, loop_nr = -1):
+    def load(self, function_name, loop_nr = -1, bcast = True):
         """
         returns a calculated function from archive
         function_name: 'Sigma_c_iw', 'G_c_iw', ...
@@ -47,7 +48,8 @@ class ArchiveConnected(object):
             else:
                 function = a['results'][str(loop_nr)][function_name]
             del a
-        function = mpi.bcast(function)
+        if bcast:
+            function = mpi.bcast(function)
         return function
 
     def archive_content(self, group = list(), dont_exp = list(), n_max_subgroups = 50, shift_step_len = 10):
