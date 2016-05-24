@@ -6,7 +6,7 @@ class CleanLoopParameters(dict):
     basically the parameters dictionary, but with additional functions that clean-up the parameters
     """
     _obligatory = ['archive', 'cluster_lattice', 'cluster', 'u_hubbard', 't', 'beta', 'n_cycles', 'mu', 'n_kpts']
-    _cthyb_keys = ['n_cycles', 'length_cycle', 'n_warmup_cycles', 'random_seed', 'random_name', 'max_time', 'verbosity', 'use_trace_estimator', 'measure_g_tau', 'measure_g_l', 'measure_pert_order', 'move_shift', 'move_double', 'measure_density_matrix', 'use_norm_as_weight', 'partition_method', 'performance_analysis']
+    _cthyb_keys = ['n_cycles', 'length_cycle', 'n_warmup_cycles', 'random_seed', 'random_name', 'max_time', 'verbosity', 'use_trace_estimator', 'measure_g_tau', 'measure_g_l', 'measure_pert_order', 'move_shift', 'move_double', 'measure_density_matrix', 'use_norm_as_weight', 'partition_method', 'performance_analysis', 'quantum_numbers']
     _replenishing_parameters = {'cluster_density': False,
                                 'verbosity': 1,
                                 'scheme': 'cellular_dmft',
@@ -35,6 +35,7 @@ class CleanLoopParameters(dict):
                                 'suppress_off_diags': False,
                                 'nambu': False,
                                 'preloop_saves': False,
+                                'hubbard_quantum_numbers': False,
                                 'length_cycle': 50,
                                 'n_warmup_cycles': 5000,
                                 'random_seed': False,
@@ -47,6 +48,7 @@ class CleanLoopParameters(dict):
                                 'move_shift': True,
                                 'move_double': True,
                                 'partition_method': "autopartition",
+                                'quantum_numbers' : [],
                                 'measure_density_matrix': False,
                                 'use_norm_as_weight': False,
                                 'performance_analysis': False

@@ -18,6 +18,7 @@ from .periodization.periodization import ClusterPeriodization
 from .plot import plot_from_archive, plot_of_loops_from_archive, checksym_plot, checktransf_plot, plot_ln_abs #move to dmftobjects?
 from .loop_parameters import CleanLoopParameters
 from .process_g import addExtField, setOffdiagsZero, readdOffdiagConstants
+from .quantumnumbers import HubbardQuantumNumbers 
 from .transformation.sites import ClustersiteTransformation
 from .transformation.nambu import NambuTransformation
 from .utility import get_site_nrs, get_dim, get_n_sites, Reporter
@@ -87,6 +88,10 @@ class CDmft(ArchiveConnected):
         report('H = ', transf.hamiltonian)
         report('Impurity solver ready')
         report('')
+
+        if clp['hubbard_quantum_numbers']:
+            qnrs = HubbardQuantumNumbers(**clp)
+            clp = qnrs.update_parameters(clp)
 
         for loop_nr in range(self.next_loop(), self.next_loop() + n_dmft_loops):
             report('DMFT-loop nr. %s'%loop_nr)
