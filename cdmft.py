@@ -110,7 +110,7 @@ class CDmft(ArchiveConnected):
             g_0_c_iw << inverse(inverse(g_c_iw) + sigma_c_iw)
             if p['suppress_off_diags']: g_0_c_iw, offdiags = setOffdiagsZero(g_0_c_iw)
 
-            dmft.make_g_0_iw_with_delta_tau_real()
+            #dmft.make_g_0_iw_with_delta_tau_real()
 
             report('Changing basis...')
             transf.set_dmft_objs(*dmft.get_dmft_objs())

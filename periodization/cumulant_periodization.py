@@ -57,7 +57,7 @@ def _cumulant_lat(sigma, mu, ssp, rbz_grid, spins):
                 for a in range(n_sites):
                     for b in range(n_sites):                  
                         if type(mTrans_r[a, b]) == tuple:
-                            m[s][a, b] += exp(complex(0, 2 * pi * dot(k, array(r)))) * m_c[s][mTrans_r[a, b][0], mTrans_r[a, b][1]]
+                            m[s][a, b] += mTrans_r[a, b][2] * exp(complex(0, 2 * pi * dot(k, array(r)))) * m_c[s][mTrans_r[a, b][0], mTrans_r[a, b][1]]
     m_sl = allgather_list(m_sl_p)
     return m_sl
 

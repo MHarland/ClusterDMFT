@@ -378,9 +378,9 @@ def _tr_g_lat_pade(g_lat, spins, pade_n_omega_n = 40, pade_eta = 5*10**(-2), dos
     tr_g_lat_pade = [GfReFreq(indices = [0], window = dos_window, n_points = dos_n_points, name = 'Tr$G_{lat}$') for i in range(n_k)]
     tr_g_lat_pade_p = scatter_list(tr_g_lat_pade)
     for g_lat_k, tr_g_lat_pade_k in izip(scatter_list(g_lat), tr_g_lat_pade_p):
-        tr_spin_g << g_lat_k[spins[0]] + g_lat_k[spins[1]]
+        tr_spin_g << (g_lat_k[spins[0]] + g_lat_k[spins[1]]) / len(spins)
         tr_band_g.zero()
-        for i in bands: tr_band_g << tr_band_g + tr_spin_g[i, i]
+        for i in bands: tr_band_g << tr_band_g + tr_spin_g[i, i] / n_sites
         tr_g = tr_band_g
         tr_g_lat_pade_k.set_from_pade(tr_g, n_points = pade_n_omega_n, freq_offset = pade_eta)
     tr_g_lat_pade = allgather_list(tr_g_lat_pade_p)
@@ -423,7 +423,7 @@ def _tr_g_lat(g_lat):
     for g_lat_k, tr_g_lat_k in izip(scatter_list(g_lat), tr_g_lat_p):
         for spin, block in g_lat_k:
             for band in bands:
-                tr_g_lat_k += g_lat_k[s][band, band]
+                tr_g_lat_k += g_lat_k[s][band, band] / len(bands) / g_lat[0].n_blocks
     tr_g_lat = allgather_list(tr_g_lat_p)
     return tr_g_lat
 

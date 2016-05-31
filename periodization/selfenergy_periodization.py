@@ -47,7 +47,7 @@ def _sigma_lat(sigma, ssp, rbz_grid, spins):
                 for a in range(n_sites):
                     for b in range(n_sites):
                         if type(sigTrans_r[a, b]) == tuple:
-                            sig_k[s][a, b] += exp(complex(0, 2 * pi * dot(k, array(r)))) * sigma[s][sigTrans_r[a, b][0], sigTrans_r[a, b][1]]
+                            sig_k[s][a, b] += sigTrans_r[a, b][2] * exp(complex(0, 2 * pi * dot(k, array(r)))) * sigma[s][sigTrans_r[a, b][0], sigTrans_r[a, b][1]]
     sigma_sl = allgather_list(sigma_sl_p)
     return sigma_sl
 

@@ -66,11 +66,14 @@ class DMFTObjects(ArchiveConnected):
                 if self.dmu - dmu_old > dmu_step_lim: self.dmu = dmu_old + dmu_step_lim
                 elif self.dmu - dmu_old < -dmu_step_lim: self.dmu = dmu_old - dmu_step_lim
 
-    def make_g_0_iw_with_delta_tau_real(self, n_tau = 10000):
+    def make_g_0_iw_with_delta_tau_real(self, n_tau = 10000, verbosity = 0):
         delta_iw = delta(self.g_0_iw)
         delta_tau = self.get_delta_tau()
         for s, b in delta_tau:
             for n, tau in enumerate(b.mesh):
+                if verbosity >= 2 and (b.data[:,:,:].imag > 10**-8).any():
+                    print 'WARNING:'
+                    print 'delta_tau.imag is of significant magnitude!'
                 b.data[n,:,:] = b.data[n,:,:].real
                 # Tail consistency is maintained anyways
                 #for i in range(len(b.tail.data)):
