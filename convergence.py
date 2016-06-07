@@ -88,7 +88,7 @@ class Distance(ListAnalysis):
         ListAnalysis.__init__(self, f_list, *args, **kwargs)
 
     def analyse(self, x):
-        return np.diff(x)
+        return abs(np.diff(x))
 
 class AccuracyAnalysis:
     def __init__(self, cdmft, n_converged):
