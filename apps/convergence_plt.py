@@ -14,10 +14,10 @@ book = PdfPages("convergence.pdf")
 for fname in sys.argv[1:]:
     cdmft = CDmft(archive = fname)
     fig = plt.figure()
-    ax1 = fig.add_axes([.12,.1,.76,.87/4])
-    ax2 = fig.add_axes([.12,.1+.87/4,.76,.87/4])
-    ax3 = fig.add_axes([.12,.1+2*.87/4,.76,.87/4])
-    ax4 = fig.add_axes([.12,.1+3*.87/4,.76,.87/4])
+    ax1 = fig.add_axes([.12,.1,.76,.85/4])
+    ax2 = fig.add_axes([.12,.1+.85/4,.76,.85/4])
+    ax3 = fig.add_axes([.12,.1+2*.85/4,.76,.85/4])
+    ax4 = fig.add_axes([.12,.1+3*.85/4,.76,.85/4])
     axes = [ax1, ax2, ax3, ax4]
     x = range(first_loop_nr, cdmft.next_loop())
     p = cdmft.load('parameters')
@@ -86,7 +86,7 @@ for fname in sys.argv[1:]:
     ax3.set_ylabel("$\Re\\tilde{G}(i\\omega_0)$")
     ax3.set_xticklabels([])
     ax4.set_xticklabels([])
-
+    fig.suptitle(fname)
     #plt.savefig(fname[:-3]+"_conv.pdf", dpi = 300)
     book.savefig()
     plt.close()
