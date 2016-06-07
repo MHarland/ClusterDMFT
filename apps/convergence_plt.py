@@ -2,6 +2,7 @@
 import matplotlib, sys, itertools as itt, numpy as np
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
 from ClusterDMFT.convergence import ConvergenceAnalysis
 from ClusterDMFT.cdmft import CDmft
@@ -9,6 +10,7 @@ from ClusterDMFT.cdmft import CDmft
 arg_range = [1025, 1045]
 first_loop_nr = 0
 
+book = PdfPages("convergence.pdf")
 for fname in sys.argv[1:]:
     cdmft = CDmft(archive = fname)
     fig = plt.figure()
@@ -61,6 +63,7 @@ for fname in sys.argv[1:]:
     ax2.set_ylabel("$\Im\\tilde{\Sigma}(i\\omega_0)$")
     ax1.set_ylabel("$\Re\\tilde{\Sigma}(i\\omega_0)$")
     ax2.set_xticklabels([])
+    ax1.set_xlabel("$\\mathrm{loop}$")    
     
     c = 0
     for blocknr, blockname in enumerate(blocknames):
@@ -84,5 +87,8 @@ for fname in sys.argv[1:]:
     ax3.set_xticklabels([])
     ax4.set_xticklabels([])
 
-    plt.savefig(fname[:-3]+"_conv.pdf", dpi = 300)
+    #plt.savefig(fname[:-3]+"_conv.pdf", dpi = 300)
+    book.savefig()
     plt.close()
+    
+book.close()
